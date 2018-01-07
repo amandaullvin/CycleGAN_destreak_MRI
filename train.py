@@ -24,8 +24,8 @@ for epoch in range(1, opt.niter + opt.niter_decay + 1):
         model.set_input(data)
         model.optimize_parameters()
 
-        if total_steps % opt.display_freq == 0:
-            visualizer.display_current_results(model.get_current_visuals(), epoch)
+        # if total_steps % opt.display_freq == 0:
+            # visualizer.display_current_results(model.get_current_visuals(), epoch)
 
         if total_steps % opt.print_freq == 0:
             errors = model.get_current_errors()
