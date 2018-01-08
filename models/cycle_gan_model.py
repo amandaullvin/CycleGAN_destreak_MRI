@@ -220,7 +220,13 @@ class CycleGANModel(BaseModel):
         D_B = self.loss_D_B.data[0]
         G_B = self.loss_G_B.data[0]
         Cyc_B = self.loss_cycle_B.data[0]
-        featL = self.feat_loss
+        feat_AfB = self.feat_loss_AfB.data[0]
+        feat_BfA = self.feat_loss_BfA.data[0]
+        #feat_fArecB = self.feat_loss_fArecB.data[0]
+        #feat_fBrecA = self.feat_loss_fBrecA.data[0]
+        #feat_ArecA = self.feat_loss_ArecA.data[0]
+        #feat_BrecB = self.feat_loss_BrecB.data[0]
+        #featL = self.feat_loss.data[0]
 
 
 
@@ -228,10 +234,14 @@ class CycleGANModel(BaseModel):
             idt_A = self.loss_idt_A.data[0]
             idt_B = self.loss_idt_B.data[0]
             return OrderedDict([('D_A', D_A), ('G_A', G_A), ('Cyc_A', Cyc_A), ('idt_A', idt_A),
-                                ('D_B', D_B), ('G_B', G_B), ('Cyc_B', Cyc_B), ('idt_B', idt_B), ('featL', featL)])
+                                ('D_B', D_B), ('G_B', G_B), ('Cyc_B', Cyc_B), ('idt_B', idt_B),
+                                ('feat_AfB', feat_AfB), ('feat_BfA', feat_BfA)]) #, ('feat_fArecB', feat_fArecB), ('feat_fBrecA', feat_fBrecA),
+                                #('feat_ArecA', feat_ArecA), ('feat_BrecB', feat_BrecB)]) #, ('featL', featL)])
         else:
             return OrderedDict([('D_A', D_A), ('G_A', G_A), ('Cyc_A', Cyc_A),
-                                ('D_B', D_B), ('G_B', G_B), ('Cyc_B', Cyc_B), ('featL', featL)])
+                                ('D_B', D_B), ('G_B', G_B), ('Cyc_B', Cyc_B),
+                                ('feat_AfB', feat_AfB), ('feat_BfA', feat_BfA)]) #, ('feat_fArecB', feat_fArecB), ('feat_fBrecA', feat_fBrecA),
+                                #('feat_ArecA', feat_ArecA), ('feat_BrecB', feat_BrecB)]) #, ('featL', featL)])
 
     def get_current_visuals(self):
         real_A = util.tensor2im(self.real_A.data)
