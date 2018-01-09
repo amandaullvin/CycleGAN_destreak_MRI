@@ -201,11 +201,11 @@ class CycleWGANModel(BaseModel):
         self.feat_loss_ArecA = self.criterionFeat(self.netFeat(self.real_A), self.netFeat(self.rec_A)) * lambda_feat_ArecA 
         self.feat_loss_BrecB = self.criterionFeat(self.netFeat(self.real_B), self.netFeat(self.rec_B)) * lambda_feat_BrecB 
 
-        self.feat_loss = self.feat_loss_AfB + self.feat_loss_BfA + self.feat_loss_fArecB 
+        self.feat_loss = self.feat_loss_AfB + self.feat_loss_BfA + self.feat_loss_fArecB \
                         + self.feat_loss_fBrecA + self.feat_loss_ArecA + self.feat_loss_BrecB
 
         # combined loss
-        self.loss_G = self.loss_cycle_A + self.loss_cycle_B 
+        self.loss_G = self.loss_cycle_A + self.loss_cycle_B \
                         + self.loss_idt_A + self.loss_idt_B + self.feat_loss
         self.loss_G.backward()
 
