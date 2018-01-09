@@ -32,19 +32,19 @@ class CycleWGANModel(BaseModel):
         self.mone = self.one * -1
 
         # init G related losses to 0 to print in the first few iterations
-        self.loss_G_A = 0
-        self.loss_G_B = 0
-        self.loss_idt_A = 0
-        self.loss_idt_B = 0
-        self.loss_cycle_A = 0
-        self.loss_cycle_B = 0
-        self.feat_loss_AfB = 0
-        self.feat_loss_BfA = 0
-        self.feat_loss_fArecB = 0
-        self.feat_loss_fBrecA = 0
-        self.feat_loss_ArecA = 0
-        self.feat_loss_BrecB = 0
-        self.feat_loss = 0
+        self.loss_G_A = Variable(self.Tensor([0]))
+        self.loss_G_B = Variable(self.Tensor([0]))
+        self.loss_idt_A = Variable(self.Tensor([0]))
+        self.loss_idt_B = Variable(self.Tensor([0]))
+        self.loss_cycle_A = Variable(self.Tensor([0]))
+        self.loss_cycle_B = Variable(self.Tensor([0]))
+        self.feat_loss_AfB = Variable(self.Tensor([0]))
+        self.feat_loss_BfA = Variable(self.Tensor([0]))
+        self.feat_loss_fArecB = Variable(self.Tensor([0]))
+        self.feat_loss_fBrecA = Variable(self.Tensor([0]))
+        self.feat_loss_ArecA = Variable(self.Tensor([0]))
+        self.feat_loss_BrecB = Variable(self.Tensor([0]))
+        self.feat_loss = Variable(self.Tensor([0]))
         # ----------------------------------------------------------------
 
         nb = opt.batchSize
