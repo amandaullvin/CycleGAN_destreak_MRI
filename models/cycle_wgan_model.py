@@ -201,12 +201,17 @@ class CycleWGANModel(BaseModel):
         self.loss_G_A = self.netD_A.forward(self.fake_B) # as in WGAN-github: errG = netD(fake)
         self.loss_G_A = self.loss_G_A.mean()  # following DCGAN_D::forward function in WGAN-github
         self.loss_G_A = self.loss_G_A.view(1)
-        self.loss_G_A.backward(self.one) # as in WGAN-github: errG.backward(one)
+        self.loss_G_A.backward(self.one, retain_graph=True) # as in WGAN-github: errG.backward(one)
+        # FIXME: Api docs says not to use retain_graph and this can be done efficiently in other ways 
+
         # D_B(G_B(B))
         self.loss_G_B = self.netD_B.forward(self.fake_A)
         self.loss_G_B = self.loss_G_B.mean()  # following DCGAN_D::forward function in WGAN-github
         self.loss_G_B = self.loss_G_B.view(1)
-        self.loss_G_B.backward(self.one)
+        self.loss_G_B.backward(self.one, retain_graph=True)
+        # FIXME: Api docs says not to use retain_graph and this can be done efficiently in other ways 
+
+        
         # Forward cycle loss
         self.rec_A = self.netG_B.forward(self.fake_B) 
         self.loss_cycle_A = self.criterionCycle(self.rec_A, self.real_A) * lambda_A
