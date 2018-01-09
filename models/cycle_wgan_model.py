@@ -44,7 +44,7 @@ class CycleWGANModel(BaseModel):
         self.feat_loss_fBrecA = 0
         self.feat_loss_ArecA = 0
         self.feat_loss_BrecB = 0
-        self.feat_loss
+        self.feat_loss = 0
         # ----------------------------------------------------------------
 
         nb = opt.batchSize
