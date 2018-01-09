@@ -224,10 +224,10 @@ class CycleWGANModel(BaseModel):
 
         # clip weights for both discriminators
         for p in self.netD_A.parameters():
-            p.data.clamp_(clamp_lower, clamp_upper)
+            p.data.clamp_(self.opt.clip_lower, self.opt.clip_upper)
 
         for p in self.netD_B.parameters():
-            p.data.clamp_(clamp_lower, clamp_upper)
+            p.data.clamp_(self.opt.clip_lower, self.opt.clip_upper)
 
     def optimize_parameters_G(self):
         # call self.forward outside!
