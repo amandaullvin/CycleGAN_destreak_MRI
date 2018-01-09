@@ -21,7 +21,6 @@ class TrainOptions(BaseOptions):
         self.parser.add_argument('--clip_lower', type=float, default=0.01, help='Clipping: Lower limit for Discriminator weights')
         self.parser.add_argument('--clip_upper', type=float, default=0.01, help='Clipping: Upper limit for Discriminator weights')
         self.parser.add_argument('--lambda_A', type=float, default=10.0, help='weight for cycle loss (A -> B -> A)')
-        self.parser.add_argument('--lambda_A', type=float, default=10.0, help='weight for cycle loss (A -> B -> A)')
         self.parser.add_argument('--lambda_B', type=float, default=10.0, help='weight for cycle loss (B -> A -> B)')
         self.parser.add_argument('--lambda_feat', type=float, default=-1, help='if positive, sets all lambdas for perceptual loss')
         self.parser.add_argument('--lambda_feat_AfB', type=float, default=0, help='weight for perception loss between real A and fake B ')
