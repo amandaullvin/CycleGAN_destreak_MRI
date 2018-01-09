@@ -65,6 +65,9 @@ for epoch in range(1, opt.nepoch + opt.nepoch_decay + 1):
                 t = (time.time() - iter_start_time) / opt.batchSize
                 visualizer.print_current_errors(epoch, epoch_iter, errors, t)
             
+        # if we consume the dataset during training D, just start new epoch without training G
+        if i >= len(dataset):
+            break
 
         # now train the generators
         model.freeze_discriminators(True) # following WGAN, we freeze discriminators while training generators
