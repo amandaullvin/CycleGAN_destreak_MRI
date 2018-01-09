@@ -84,10 +84,10 @@ class CycleWGANModel(BaseModel):
                 self.optimizer_D_B = torch.optim.Adam(self.netD_B.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
             else:
                 # in https://github.com/martinarjovsky/WassersteinGAN, only LR is provided to RMSProp
-                self.optimizer_G = torch.optim.RMSProp(itertools.chain(self.netG_A.parameters(), self.netG_B.parameters()),
+                self.optimizer_G = torch.optim.RMSprop(itertools.chain(self.netG_A.parameters(), self.netG_B.parameters()),
                                                 lr=opt.lr)
-                self.optimizer_D_A = torch.optim.RMSProp(self.netD_A.parameters(), lr=opt.lr)
-                self.optimizer_D_B = torch.optim.RMSProp(self.netD_B.parameters(), lr=opt.lr)
+                self.optimizer_D_A = torch.optim.RMSprop(self.netD_A.parameters(), lr=opt.lr)
+                self.optimizer_D_B = torch.optim.RMSprop(self.netD_B.parameters(), lr=opt.lr)
 
 
         print('---------- Networks initialized -------------')
