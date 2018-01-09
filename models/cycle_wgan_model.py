@@ -29,7 +29,7 @@ class CycleWGANModel(BaseModel):
         BaseModel.initialize(self, opt)
 
         self.one = self.Tensor([1])
-        self.mone = one * -1
+        self.mone = self.one * -1
 
         nb = opt.batchSize
         size = opt.fineSize
