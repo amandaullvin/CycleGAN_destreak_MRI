@@ -142,6 +142,7 @@ class CycleWGANModel(BaseModel):
     def backward_D_basic(self, netD, real, fake):
         # Real
         errD_real = netD.forward(real) # named it as in WGAN-github
+        import pdb; pdb.set_trace()
         errD_real = errD_real.mean(0)  # following DCGAN_D::forward function in WGAN-github
         errD_real = errD_real.view(1)
         # Fake

@@ -364,7 +364,7 @@ class NLayerDiscriminator(nn.Module):
             nn.LeakyReLU(0.2, True)
         ]
 
-        sequence += [nn.Conv2d(ndf * nf_mult, 1, kernel_size=kw, stride=1, padding=padw)]
+        sequence += [nn.Conv2d(ndf * nf_mult, 1, kernel_size=kw, stride=1, padding=padw, bias=False)] # FIXME bias=False might not be optimal for standard CycleGAN
 
         if use_sigmoid:
             sequence += [nn.Sigmoid()]
