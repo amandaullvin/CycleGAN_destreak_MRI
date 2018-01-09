@@ -14,6 +14,7 @@ import numpy as np
 ###############################################################################
 
 
+# already same with WGAN
 def weights_init(m):
     classname = m.__class__.__name__
     if classname.find('Conv') != -1:
@@ -112,7 +113,6 @@ def print_network(net):
 ##############################################################################
 # Classes
 ##############################################################################
-
 
 # Defines the GAN loss which uses either LSGAN or the regular GAN.
 # When LSGAN is used, it is basically same as MSELoss,

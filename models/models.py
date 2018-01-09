@@ -6,6 +6,10 @@ def create_model(opt):
         assert(opt.dataset_mode == 'unaligned')
         from .cycle_gan_model import CycleGANModel
         model = CycleGANModel()
+    elif opt.model == 'cycle_wgan':
+        assert(opt.dataset_mode == 'unaligned')
+        from .cycle_wgan_model import CycleWGANModel
+        model = CycleWGANModel()
     elif opt.model == 'pix2pix':
         assert(opt.dataset_mode == 'aligned')
         from .pix2pix_model import Pix2PixModel
