@@ -199,12 +199,12 @@ class CycleWGANModel(BaseModel):
         # WGAN loss
         # D_A(G_A(A))
         self.loss_G_A = self.netD_A.forward(self.fake_B) # as in WGAN-github: errG = netD(fake)
-        self.loss_G_A = self.loss_G_A.mean(0)  # following DCGAN_D::forward function in WGAN-github
+        self.loss_G_A = self.loss_G_A.mean()  # following DCGAN_D::forward function in WGAN-github
         self.loss_G_A = self.loss_G_A.view(1)
         self.loss_G_A.backward(self.one) # as in WGAN-github: errG.backward(one)
         # D_B(G_B(B))
         self.loss_G_B = self.netD_B.forward(self.fake_A)
-        self.loss_G_B = self.loss_G_B.mean(0)  # following DCGAN_D::forward function in WGAN-github
+        self.loss_G_B = self.loss_G_B.mean()  # following DCGAN_D::forward function in WGAN-github
         self.loss_G_B = self.loss_G_B.view(1)
         self.loss_G_B.backward(self.one)
         # Forward cycle loss
