@@ -43,7 +43,7 @@ for epoch in range(1, opt.nepoch + opt.nepoch_decay + 1):
         if gen_iterations < 25 or gen_iterations % 500 == 0:
             diters = 100
         else:
-            diters = opt.diters
+            diters = opt.diter
 
         j = 0
         while j < diters and i < len(dataset):
