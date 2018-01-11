@@ -340,7 +340,7 @@ class DCGAN_D(nn.Module):
 
         main = nn.Sequential()
         # input is nc x isize x isize
-        main.add_module('initial_conv_{0}-{1}'.format(input_nc, ndf),
+        main.add_module('initial_conv_{0}_{1}'.format(input_nc, ndf),
                         nn.Conv2d(input_nc, ndf, 4, 2, 1, bias=False))
         main.add_module('initial_relu_{0}'.format(ndf),
                         nn.LeakyReLU(0.2, inplace=True))
@@ -348,11 +348,11 @@ class DCGAN_D(nn.Module):
 
         # Extra layers
         for t in range(n_extra_layers):
-            main.add_module('extra-layers-{0}_{1}.conv'.format(t, cndf),
+            main.add_module('extra-layers-{0}_{1}_conv'.format(t, cndf),
                             nn.Conv2d(cndf, cndf, 3, 1, 1, bias=False))
-            main.add_module('extra-layers-{0}_{1}.batchnorm'.format(t, cndf),
+            main.add_module('extra-layers-{0}_{1}_batchnorm'.format(t, cndf),
                             nn.BatchNorm2d(cndf))
-            main.add_module('extra-layers-{0}_{1}.relu'.format(t, cndf),
+            main.add_module('extra-layers-{0}_{1}_relu'.format(t, cndf),
                             nn.LeakyReLU(0.2, inplace=True))
 
         while csize > 4:
