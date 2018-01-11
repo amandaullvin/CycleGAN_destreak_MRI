@@ -125,7 +125,6 @@ class CycleWGANModel(BaseModel):
     def forward(self):
         self.real_A = Variable(self.input_A)
         self.real_B = Variable(self.input_B)
-        import pdb; pdb.set_trace()
 
     def test(self):
         self.real_A = Variable(self.input_A, volatile=True)
@@ -165,6 +164,7 @@ class CycleWGANModel(BaseModel):
         # compute gradients for both
         errD_real.backward(self.one) 
         errD_fake.backward(self.mone)
+        import pdb; pdb.set_trace()
 
         errD = errD_real - errD_fake # it's the approximation of  Wasserstein distance between Preal and Pgenerator
         # errD.backward(self.one)
