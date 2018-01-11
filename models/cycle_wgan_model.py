@@ -125,6 +125,7 @@ class CycleWGANModel(BaseModel):
     def forward(self):
         self.real_A = Variable(self.input_A)
         self.real_B = Variable(self.input_B)
+        import pdb; pdb.set_trace()
 
     def test(self):
         self.real_A = Variable(self.input_A, volatile=True)
