@@ -164,9 +164,9 @@ class CycleWGANModel(BaseModel):
         self.loss_D_A_real, self.loss_D_A_fake = self.backward_D_basic(self.netD_A, self.real_B, self.fake_B)
 
     def backward_D_B(self):
-        freeze_generators(True)
+        self.freeze_generators(True)
         self.fake_A = self.netG_B.forward(self.real_B)
-        freeze_generators(False)
+        self.freeze_generators(False)
         self.loss_D_B_real, self.loss_D_B_fake = self.backward_D_basic(self.netD_B, self.real_A, self.fake_A)
 
     def backward_G(self):
