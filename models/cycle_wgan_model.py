@@ -135,6 +135,18 @@ class CycleWGANModel(BaseModel):
         self.fake_A = self.netG_B.forward(self.real_B)
         self.rec_B = self.netG_A.forward(self.fake_A)
 
+    def freeze_discriminators(self, freeze=True):
+        for p in self.netD_A.parameters(): 
+            p.requires_grad = not freeze 
+        for p in self.netD_B.parameters(): 
+            p.requires_grad = not freeze 
+
+    def freeze_generators(self, freeze=True):
+        for p in self.netG_A.parameters(): 
+            p.requires_grad = not freeze 
+        for p in self.netG_B.parameters(): 
+            p.requires_grad = not freeze 
+
     # get image paths
     def get_image_paths(self):
         return self.image_paths
@@ -321,17 +333,7 @@ class CycleWGANModel(BaseModel):
             return OrderedDict([('real_A', real_A), ('fake_B', fake_B), ('rec_A', rec_A),
                                 ('real_B', real_B), ('fake_A', fake_A), ('rec_B', rec_B)])
 
-    def freeze_discriminators(self, freeze=True):
-        for p in self.netD_A.parameters(): 
-            p.requires_grad = not freeze 
-        for p in self.netD_B.parameters(): 
-            p.requires_grad = not freeze 
 
-    def freeze_generators(self, freeze=True):
-        for p in self.netG_A.parameters(): 
-            p.requires_grad = not freeze 
-        for p in self.netG_B.parameters(): 
-            p.requires_grad = not freeze 
 
 
     def save(self, label):
