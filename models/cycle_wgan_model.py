@@ -166,6 +166,7 @@ class CycleWGANModel(BaseModel):
         #errD_fake.backward(self.mone)
 
         errD = torch.abs(errD_real - errD_fake) # it's the approximation of  Wasserstein distance between Preal and Pgenerator
+        errD.backward(self.one)
 
         # return errD_real, errD_fake 
         return errD
