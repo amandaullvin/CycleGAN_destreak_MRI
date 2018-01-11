@@ -162,11 +162,11 @@ class CycleWGANModel(BaseModel):
         errD_fake = errD_fake.mean()  # following DCGAN_D::forward function in WGAN-github
         errD_fake = errD_fake.view(1)
         # compute gradients for both
-        #errD_real.backward(self.one) 
-        #errD_fake.backward(self.mone)
+        errD_real.backward(self.one) 
+        errD_fake.backward(self.mone)
 
         errD = errD_real - errD_fake # it's the approximation of  Wasserstein distance between Preal and Pgenerator
-        errD.backward(self.one)
+        # errD.backward(self.one)
 
         # return errD_real, errD_fake 
         return errD
