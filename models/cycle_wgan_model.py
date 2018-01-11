@@ -170,9 +170,9 @@ class CycleWGANModel(BaseModel):
         return errD_real, errD_fake 
 
     def backward_D_A(self):
-        freeze_generators(True)
+        self.freeze_generators(True)
         self.fake_B = self.netG_A.forward(self.real_A)
-        freeze_generators(False)
+        self.freeze_generators(False)
         self.loss_D_A_real, self.loss_D_A_fake = self.backward_D_basic(self.netD_A, self.real_B, self.fake_B)
 
     def backward_D_B(self):
