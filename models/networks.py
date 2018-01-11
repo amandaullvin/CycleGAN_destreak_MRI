@@ -73,7 +73,7 @@ def define_D(input_nc, ndf, which_model_netD,
     elif which_model_netD == 'n_layers':
         netD = NLayerDiscriminator(input_nc, ndf, n_layers_D, norm_layer=norm_layer, use_sigmoid=use_sigmoid, gpu_ids=gpu_ids)
     elif which_model_netD == 'dcgan':
-        netD = DCGAN_D(input_nc, ndf, 256, gpu_ids) # FIXME! isize instead of 256!!
+        netD = DCGAN_D(input_nc, ndf, 256, gpu_ids, n_extra_layers=1) # FIXME! isize instead of 256!! extra layers from arguments!!
     else:
         raise NotImplementedError('Discriminator model name [%s] is not recognized' %
                                   which_model_netD)
