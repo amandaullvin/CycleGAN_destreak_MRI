@@ -158,16 +158,16 @@ class CycleWGANModel(BaseModel):
         return errD_real, errD_fake 
 
     def backward_D_A(self):
-        real_A_volatile = Variable(self.real_A.data, volatile=True)
-        # self.fake_B = self.netG_A.forward(self.real_A)
-        fake_B = self.netG_A.forward(real_A_volatile)
-        self.loss_D_A_real, self.loss_D_A_fake = self.backward_D_basic(self.netD_A, self.real_B, fake_B)
+        freeze_generators(True)
+        self.fake_B = self.netG_A.forward(self.real_A)
+        freeze_generators(False)
+        self.loss_D_A_real, self.loss_D_A_fake = self.backward_D_basic(self.netD_A, self.real_B, self.fake_B)
 
     def backward_D_B(self):
-        real_B_volatile = Variable(self.real_B.data, volatile=True)
-        # self.fake_A = self.netG_B.forward(self.real_B)
-        fake_A = self.netG_B.forward(real_B_volatile)
-        self.loss_D_B_real, self.loss_D_B_fake = self.backward_D_basic(self.netD_B, self.real_A, fake_A)
+        freeze_generators(True)
+        self.fake_A = self.netG_B.forward(self.real_B)
+        freeze_generators(False)
+        self.loss_D_B_real, self.loss_D_B_fake = self.backward_D_basic(self.netD_B, self.real_A, self.fake_A)
 
     def backward_G(self):
         lambda_idt = self.opt.identity
@@ -325,6 +325,12 @@ class CycleWGANModel(BaseModel):
         for p in self.netD_A.parameters(): 
             p.requires_grad = not freeze 
         for p in self.netD_B.parameters(): 
+            p.requires_grad = not freeze 
+
+    def freeze_generators(self, freeze=True):
+        for p in self.netG_A.parameters(): 
+            p.requires_grad = not freeze 
+        for p in self.netG_B.parameters(): 
             p.requires_grad = not freeze 
 
 
