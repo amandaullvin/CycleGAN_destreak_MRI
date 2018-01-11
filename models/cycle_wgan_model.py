@@ -155,12 +155,12 @@ class CycleWGANModel(BaseModel):
         # Real
         realcopy = real.clone()
         errD_real = netD.forward(realcopy) # named it as in WGAN-github
-        errD_real = errD_real.mean()  # following DCGAN_D::forward function in WGAN-github
-        errD_real = errD_real.view(1)
+        # errD_real = errD_real.mean()  # following DCGAN_D::forward function in WGAN-github
+        # errD_real = errD_real.view(1)
         # Fake
         errD_fake = netD.forward(fake.detach()) # named it as it WGAN-github
-        errD_fake = errD_fake.mean()  # following DCGAN_D::forward function in WGAN-github
-        errD_fake = errD_fake.view(1)
+        # errD_fake = errD_fake.mean()  # following DCGAN_D::forward function in WGAN-github
+        # errD_fake = errD_fake.view(1)
         # compute gradients for both
         import pdb; pdb.set_trace()
         errD_real.backward(self.one) 
