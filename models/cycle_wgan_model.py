@@ -158,12 +158,16 @@ class CycleWGANModel(BaseModel):
         return errD_real, errD_fake 
 
     def backward_D_A(self):
-        self.fake_B = self.netG_A.forward(self.real_A)
-        self.loss_D_A_real, self.loss_D_A_fake = self.backward_D_basic(self.netD_A, self.real_B, self.fake_B)
+        real_A_volatile = Variable(self.real_A.data, volatile=True)
+        # self.fake_B = self.netG_A.forward(self.real_A)
+        fake_B = self.netG_A.forward(real_A_volatile)
+        self.loss_D_A_real, self.loss_D_A_fake = self.backward_D_basic(self.netD_A, self.real_B, fake_B)
 
     def backward_D_B(self):
-        self.fake_A = self.netG_B.forward(self.real_B)
-        self.loss_D_B_real, self.loss_D_B_fake = self.backward_D_basic(self.netD_B, self.real_A, self.fake_A)
+        real_B_volatile = Variable(self.real_B.data, volatile=True)
+        # self.fake_A = self.netG_B.forward(self.real_B)
+        fake_A = self.netG_B.forward(real_B_volatile)
+        self.loss_D_B_real, self.loss_D_B_fake = self.backward_D_basic(self.netD_B, self.real_A, fake_A)
 
     def backward_G(self):
         lambda_idt = self.opt.identity
@@ -201,6 +205,7 @@ class CycleWGANModel(BaseModel):
 
         # WGAN loss
         # D_A(G_A(A))
+        self.fake_B = self.netG_A.forward(self.real_A)
         self.loss_G_A = self.netD_A.forward(self.fake_B) # as in WGAN-github: errG = netD(fake)
         self.loss_G_A = self.loss_G_A.mean()  # following DCGAN_D::forward function in WGAN-github
         self.loss_G_A = self.loss_G_A.view(1)
@@ -208,6 +213,7 @@ class CycleWGANModel(BaseModel):
         # FIXME: Api docs says not to use retain_graph and this can be done efficiently in other ways 
 
         # D_B(G_B(B))
+        self.fake_A = self.netG_B.forward(self.real_B)
         self.loss_G_B = self.netD_B.forward(self.fake_A)
         self.loss_G_B = self.loss_G_B.mean()  # following DCGAN_D::forward function in WGAN-github
         self.loss_G_B = self.loss_G_B.view(1)
