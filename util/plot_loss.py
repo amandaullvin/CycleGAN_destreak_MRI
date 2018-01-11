@@ -54,7 +54,7 @@ def main():
 	plt.title('Discriminator losses over iterations')
 	plt.ylabel('Loss')
 	plt.xlabel('Iteration')
-	plt.legend(['D_A Real', 'D_A Fake', 'D_B Real', 'D_B Fake'], loc='upper right')
+	plt.legend(['D_A Real', 'D_A Fake', 'D_B Real', 'D_B Fake'], loc='lower right')
 	plt.savefig('d_losses.png')
 	plt.close()
 

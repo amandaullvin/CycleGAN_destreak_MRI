@@ -162,24 +162,27 @@ class CycleWGANModel(BaseModel):
         errD_fake = errD_fake.mean()  # following DCGAN_D::forward function in WGAN-github
         errD_fake = errD_fake.view(1)
         # compute gradients for both
-        errD_real.backward(self.one) 
-        errD_fake.backward(self.mone)
+        #errD_real.backward(self.one) 
+        #errD_fake.backward(self.mone)
 
-        #errD = errD_real - errD_fake # it's the approximation of  Wasserstein distance between Preal and Pgenerator
+        errD = torch.abs(errD_real - errD_fake) # it's the approximation of  Wasserstein distance between Preal and Pgenerator
 
-        return errD_real, errD_fake 
+        # return errD_real, errD_fake 
+        return errD
 
     def backward_D_A(self):
         self.freeze_generators(True)
         self.fake_B = self.netG_A.forward(self.real_A)
         self.freeze_generators(False)
-        self.loss_D_A_real, self.loss_D_A_fake = self.backward_D_basic(self.netD_A, self.real_B, self.fake_B)
+        # self.loss_D_A_real, self.loss_D_A_fake = self.backward_D_basic(self.netD_A, self.real_B, self.fake_B)
+        self.loss_D_A = self.backward_D_basic(self.netD_A, self.real_B, self.fake_B)
 
     def backward_D_B(self):
         self.freeze_generators(True)
         self.fake_A = self.netG_B.forward(self.real_B)
         self.freeze_generators(False)
-        self.loss_D_B_real, self.loss_D_B_fake = self.backward_D_basic(self.netD_B, self.real_A, self.fake_A)
+        # self.loss_D_B_real, self.loss_D_B_fake = self.backward_D_basic(self.netD_B, self.real_A, self.fake_A)
+        self.loss_D_B = self.backward_D_basic(self.netD_B, self.real_A, self.fake_A)
 
     def backward_G(self):
         lambda_idt = self.opt.identity
@@ -288,10 +291,12 @@ class CycleWGANModel(BaseModel):
         self.optimizer_G.step()
 
     def get_current_errors(self):
-        D_A_real, D_A_fake = self.loss_D_A_real.data[0], self.loss_D_A_fake.data[0] 
+        # D_A_real, D_A_fake = self.loss_D_A_real.data[0], self.loss_D_A_fake.data[0] 
+        D_A = self.loss_D_A.data[0]
         G_A = self.loss_G_A.data[0]
         Cyc_A = self.loss_cycle_A.data[0]
-        D_B_real, D_B_fake = self.loss_D_B_real.data[0], self.loss_D_B_fake.data[0] 
+        # D_B_real, D_B_fake = self.loss_D_B_real.data[0], self.loss_D_B_fake.data[0] 
+        D_B = self.loss_D_B.data[0]
         G_B = self.loss_G_B.data[0]
         Cyc_B = self.loss_cycle_B.data[0]
         # feat_AfB = self.feat_loss_AfB.data[0]
@@ -307,13 +312,13 @@ class CycleWGANModel(BaseModel):
         if self.opt.identity > 0.0:
             idt_A = self.loss_idt_A.data[0]
             idt_B = self.loss_idt_B.data[0]
-            return OrderedDict([('D_A_real', D_A_real), ('D_A_fake', D_A_fake), ('G_A', G_A), ('Cyc_A', Cyc_A), ('idt_A', idt_A),
-                                ('D_B_real', D_B_real), ('D_B_fake', D_B_fake), ('G_B', G_B), ('Cyc_B', Cyc_B), ('idt_B', idt_B),
+            return OrderedDict([('D_A', D_A), ('G_A', G_A), ('Cyc_A', Cyc_A), ('idt_A', idt_A),
+                                ('D_B', D_B), ('G_B', G_B), ('Cyc_B', Cyc_B), ('idt_B', idt_B),
                                 ('featL', featL)]) #, ('feat_fArecB', feat_fArecB), ('feat_fBrecA', feat_fBrecA), ('feat_AfB', feat_AfB), ('feat_BfA', feat_BfA), 
                                 #('feat_ArecA', feat_ArecA), ('feat_BrecB', feat_BrecB)]) #, ('featL', featL)])
         else:
-            return OrderedDict([('D_A_real', D_A_real), ('D_A_fake', D_A_fake), ('G_A', G_A), ('Cyc_A', Cyc_A),
-                                ('D_B_real', D_B_real), ('D_B_fake', D_B_fake), ('G_B', G_B), ('Cyc_B', Cyc_B),
+            return OrderedDict([('D_A', D_A), ('G_A', G_A), ('Cyc_A', Cyc_A),
+                                ('D_B', D_B), ('G_B', G_B), ('Cyc_B', Cyc_B),
                                 ('featL', featL)]) #, ('feat_fArecB', feat_fArecB), ('feat_fBrecA', feat_fBrecA), ('feat_AfB', feat_AfB), ('feat_BfA', feat_BfA), 
                                 #('feat_ArecA', feat_ArecA), ('feat_BrecB', feat_BrecB)]) #, ('featL', featL)])
 
