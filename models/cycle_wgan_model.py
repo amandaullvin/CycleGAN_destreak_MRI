@@ -319,8 +319,8 @@ class CycleWGANModel(BaseModel):
                                 ('featL', featL)]) #, ('feat_fArecB', feat_fArecB), ('feat_fBrecA', feat_fBrecA), ('feat_AfB', feat_AfB), ('feat_BfA', feat_BfA), 
                                 #('feat_ArecA', feat_ArecA), ('feat_BrecB', feat_BrecB)]) #, ('featL', featL)])
         else:
-            return OrderedDict([('D_A', D_A), ('G_A', G_A), ('Cyc_A', Cyc_A),
-                                ('D_B', D_B), ('G_B', G_B), ('Cyc_B', Cyc_B),
+            return OrderedDict([('D_A_real', D_A_real), ('D_A_fake', D_A_fake), ('G_A', G_A), ('Cyc_A', Cyc_A),
+                                ('D_B_real', D_B_real), ('D_B_fake', D_B_fake), ('G_B', G_B), ('Cyc_B', Cyc_B),
                                 ('featL', featL)]) #, ('feat_fArecB', feat_fArecB), ('feat_fBrecA', feat_fBrecA), ('feat_AfB', feat_AfB), ('feat_BfA', feat_BfA), 
                                 #('feat_ArecA', feat_ArecA), ('feat_BrecB', feat_BrecB)]) #, ('featL', featL)])
 
