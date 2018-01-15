@@ -21,6 +21,31 @@ import sys
 def mse_loss(input, target):
     return torch.sum((input - target)**2) / input.data.nelement()
 
+def printnorm(self, input, output):
+    # input is a tuple of packed inputs
+    # output is a Variable. output.data is the Tensor we are interested
+    print('')
+    print('Inside ' + self.__class__.__name__ + ' forward')    
+    # print('input: ', type(input))
+    # print('input[0]: ', type(input[0]))
+    # print('output: ', type(output))
+    # print('')
+    # print('input size:', input[0].size())
+    # print('output size:', output.data.size())
+    print('output norm:', output.data.norm())
+
+def printgradnorm(self, grad_input, grad_output):
+    print('Inside ' + self.__class__.__name__ + ' backward')
+    #print('Inside class:' + self.__class__.__name__)
+    # print('grad_input: ', type(grad_input))
+    # print('grad_input[0]: ', type(grad_input[0]))
+    # print('grad_output: ', type(grad_output))
+    # print('grad_output[0]: ', type(grad_output[0]))
+    # print('')
+    # print('grad_input size:', grad_input[0].size())
+    # print('grad_output size:', grad_output[0].size())
+    print('grad_input norm:', grad_input[0].data.norm())
+
 class CycleWGANModel(BaseModel):
     def name(self):
         return 'CycleWGANModel'
@@ -71,6 +96,11 @@ class CycleWGANModel(BaseModel):
                                             opt.which_model_netD,
                                             opt.n_layers_D, opt.norm, use_sigmoid, self.gpu_ids)
             self.netFeat = networks.define_feature_network(opt.which_model_feat, self.gpu_ids)
+
+            #self.netD_A.model[11].register_forward_hook(printnorm)
+            #self.netD_A.model[11].register_backward_hook(printgradnorm)
+            #self.netD_B.model[11].register_forward_hook(printnorm)
+            #self.netD_B.model[11].register_backward_hook(printgradnorm)
 
         if not self.isTrain or opt.continue_train:
             which_epoch = opt.which_epoch
@@ -153,18 +183,25 @@ class CycleWGANModel(BaseModel):
 
     def backward_D_basic(self, netD, real, fake):
         # Real
-        realcopy = real.clone()
-        errD_real = netD.forward(realcopy) # named it as in WGAN-github
-        # errD_real = errD_real.mean()  # following DCGAN_D::forward function in WGAN-github
-        # errD_real = errD_real.view(1)
+        #realcopy = real.clone()
+        errD_real = netD.forward(real) # named it as in WGAN-github
+        errD_real = errD_real.mean()  # following DCGAN_D::forward function in WGAN-github
+        errD_real = errD_real.view(1)
+        errD_real.backward(self.one)
+
+        #import pdb; pdb.set_trace()
+
         # Fake
-        errD_fake = netD.forward(fake.detach()) # named it as it WGAN-github
-        # errD_fake = errD_fake.mean()  # following DCGAN_D::forward function in WGAN-github
-        # errD_fake = errD_fake.view(1)
+        errD_fake = netD.forward(fake) # named it as it WGAN-github
+        errD_fake = errD_fake.mean()  # following DCGAN_D::forward function in WGAN-github
+        errD_fake = errD_fake.view(1)
+
+        #pdb.set_trace()
+
         # compute gradients for both
-        errD_real.backward(self.one) 
         errD_fake.backward(self.mone)
 
+        #pdb.set_trace()
 
         # errD = errD_real - errD_fake # it's the approximation of  Wasserstein distance between Preal and Pgenerator
         # errD.backward(self.one)
@@ -269,20 +306,22 @@ class CycleWGANModel(BaseModel):
 
         # D_A
         self.optimizer_D_A.zero_grad()
+        #self.netD_A.zero_grad()
         self.backward_D_A() # generates fake_B for the iteration
-        self.optimizer_D_A.step()
+        self.optimizer_D_A.step()        
 
         # D_B
         self.optimizer_D_B.zero_grad()
+        #self.netD_B.zero_grad()
         self.backward_D_B() # generates fake_B for the iteration
         self.optimizer_D_B.step()
 
         # clip weights for both discriminators
         for p in self.netD_A.parameters():
-            p.data.clamp_(self.opt.clip_lower, self.opt.clip_upper)
+            p.data.clamp_(-self.opt.clip_lower, self.opt.clip_upper)
 
         for p in self.netD_B.parameters():
-            p.data.clamp_(self.opt.clip_lower, self.opt.clip_upper)
+            p.data.clamp_(-self.opt.clip_lower, self.opt.clip_upper)
 
     def optimize_parameters_G(self):
         # call self.forward outside!
@@ -294,10 +333,11 @@ class CycleWGANModel(BaseModel):
 
     def get_current_errors(self):
         D_A_real, D_A_fake = self.loss_D_A_real.data[0], self.loss_D_A_fake.data[0] 
-        # D_A = self.loss_D_A.data[0]
+        D_A = D_A_real - D_A_fake
         G_A = self.loss_G_A.data[0]
         Cyc_A = self.loss_cycle_A.data[0]
         D_B_real, D_B_fake = self.loss_D_B_real.data[0], self.loss_D_B_fake.data[0] 
+        D_B = D_B_real - D_B_fake
         # D_B = self.loss_D_B.data[0]
         G_B = self.loss_G_B.data[0]
         Cyc_B = self.loss_cycle_B.data[0]
@@ -307,20 +347,18 @@ class CycleWGANModel(BaseModel):
         #feat_fBrecA = self.feat_loss_fBrecA.data[0]
         #feat_ArecA = self.feat_loss_ArecA.data[0]
         #feat_BrecB = self.feat_loss_BrecB.data[0]
-        featL = self.feat_loss.data[0]
-
-
+        featL = self.feat_loss.data[0]        
 
         if self.opt.identity > 0.0:
             idt_A = self.loss_idt_A.data[0]
             idt_B = self.loss_idt_B.data[0]
-            return OrderedDict([('D_A_real', D_A_real), ('D_A_fake', D_A_fake), ('G_A', G_A), ('Cyc_A', Cyc_A), ('idt_A', idt_A),
-                                ('D_B_real', D_B_real), ('D_B_fake', D_B_fake),  ('G_B', G_B), ('Cyc_B', Cyc_B), ('idt_B', idt_B),
+            return OrderedDict([('D_A_real', D_A_real), ('D_A_fake', D_A_fake), ('D_A', D_A), #('G_A', G_A), ('Cyc_A', Cyc_A), ('idt_A', idt_A),
+                                ('D_B_real', D_B_real), ('D_B_fake', D_B_fake), ('D_B', D_B), # ('G_B', G_B), ('Cyc_B', Cyc_B), ('idt_B', idt_B),
                                 ('featL', featL)]) #, ('feat_fArecB', feat_fArecB), ('feat_fBrecA', feat_fBrecA), ('feat_AfB', feat_AfB), ('feat_BfA', feat_BfA), 
                                 #('feat_ArecA', feat_ArecA), ('feat_BrecB', feat_BrecB)]) #, ('featL', featL)])
         else:
-            return OrderedDict([('D_A_real', D_A_real), ('D_A_fake', D_A_fake), ('G_A', G_A), ('Cyc_A', Cyc_A),
-                                ('D_B_real', D_B_real), ('D_B_fake', D_B_fake), ('G_B', G_B), ('Cyc_B', Cyc_B),
+            return OrderedDict([('D_A_real', D_A_real), ('D_A_fake', D_A_fake), ('D_A', D_A), #('G_A', G_A), ('Cyc_A', Cyc_A),
+                                ('D_B_real', D_B_real), ('D_B_fake', D_B_fake), ('D_B', D_B), #('G_B', G_B), ('Cyc_B', Cyc_B),
                                 ('featL', featL)]) #, ('feat_fArecB', feat_fArecB), ('feat_fBrecA', feat_fBrecA), ('feat_AfB', feat_AfB), ('feat_BfA', feat_BfA), 
                                 #('feat_ArecA', feat_ArecA), ('feat_BrecB', feat_BrecB)]) #, ('featL', featL)])
 

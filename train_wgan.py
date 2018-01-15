@@ -60,10 +60,10 @@ for epoch in range(1, opt.nepoch + opt.nepoch_decay + 1):
             model.optimize_parameters_D()
 
             # print losses to console
-            # if total_steps % opt.print_freq == 0:
-            #     errors = model.get_current_errors()
-            #     t = (time.time() - iter_start_time) / opt.batchSize
-            #     visualizer.print_current_errors(epoch, epoch_iter, errors, t)
+            if total_steps % opt.print_freq == 0:
+                errors = model.get_current_errors()
+                t = (time.time() - iter_start_time) / opt.batchSize
+                visualizer.print_current_errors(epoch, epoch_iter, errors, t)
             
         # if we consume the dataset during training D, just start new epoch without training G
         if i >= len(dataset):
