@@ -31,31 +31,43 @@ def main():
 	filepath = sys.argv[1]
 	f = open(filepath, 'r')
 
-	its, da_reals, da_fakes, db_reals, db_fakes = [], [], [], [], []
+	da_reals, da_fakes, gas, cycas, db_reals, db_fakes, gbs, cycbs, feats = [], [], [], [], [], [], [], [], []
+	da_diff, db_diff = [], []
+
 
 	for line in f:
-		it, da_real, da_fake, _, _, db_real, db_fake, _, _, _ = parse_line(line)
+		it, da_real, da_fake, ga, cyca, db_real, db_fake, gb, cycb, feat = parse_line(line)
 		if it < 0:
 			continue
 
-
-		its.append(it)
-		da_reals.append(da_real)
-		db_reals.append(db_real)
-		da_fakes.append(da_fake)
-		db_fakes.append(db_fake)
+		# da_reals.append(da_real)
+		# da_fakes.append(da_fake)
+		# gas.append(ga)
+		# cycas.append(cyca)
+		# db_reals.append(db_real)
+		# db_fakes.append(db_fake)
+		# gbs.append(gb)
+		# cycbs.append(cycb)
+		feats.append(feat)
 
 	print("Parsing completed.")
 	plt.figure()
-	plt.plot(np.asarray(da_reals))
-	plt.plot(np.asarray(da_fakes))
-	plt.plot(np.asarray(db_reals))
-	plt.plot(np.asarray(db_fakes))
-	plt.title('Discriminator losses over iterations')
+
+	# plt.plot(np.asarray(da_reals))
+	# plt.plot(np.asarray(da_fakes))
+	# plt.plot(np.asarray(gas))
+	# plt.plot(np.asarray(cycas))
+	# plt.plot(np.asarray(db_reals))
+	# plt.plot(np.asarray(db_fakes))
+	# plt.plot(np.asarray(gbs))
+	# plt.plot(np.asarray(cycbs))
+	plt.plot(np.asarray(feats))
+
+	plt.title('Perceptual losses (all combined) over iterations')
 	plt.ylabel('Loss')
-	plt.xlabel('Iteration')
-	plt.legend(['D_A Real', 'D_A Fake', 'D_B Real', 'D_B Fake'], loc='lower right')
-	plt.savefig('d_losses.png')
+	plt.xlabel('Generator Iteration')
+	# plt.legend(['G_A', 'G_B'], loc='lower right')
+	plt.savefig('CycWGAN_Perceptual_losses.png')
 	plt.close()
 
 
