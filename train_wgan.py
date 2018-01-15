@@ -37,7 +37,8 @@ for epoch in range(1, opt.nepoch + opt.nepoch_decay + 1):
     i = 0
 
     while i < len(dataset):
-        model.freeze_discriminators(False) # will train discriminators
+        # Frozen and unfrozen within model.bacward_G
+        # model.freeze_discriminators(False) # will train discriminators
 
         # train the discriminators Diters times
         if (gen_iterations < 25 and not opt.skip_warmup) or (gen_iterations % 500 == 0 and gen_iterations > 0):
@@ -70,7 +71,9 @@ for epoch in range(1, opt.nepoch + opt.nepoch_decay + 1):
             break
 
         # now train the generators
-        model.freeze_discriminators(True) # following WGAN, we freeze discriminators while training generators
+
+        # Frozen and unfrozen within model.bacward_G
+        # model.freeze_discriminators(True) # following WGAN, we freeze discriminators while training generators
         data = data_iter.next() # sample data real_A and real_B
         model.set_input(data)
         i += 1

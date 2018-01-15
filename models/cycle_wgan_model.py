@@ -184,7 +184,7 @@ class CycleWGANModel(BaseModel):
     def backward_D_basic(self, netD, real, fake):
         # Real
         #realcopy = real.clone()
-        errD_real = netD.forward(real) # named it as in WGAN-github
+        errD_real = netD(real) # named it as in WGAN-github
         errD_real = errD_real.mean()  # following DCGAN_D::forward function in WGAN-github
         errD_real = errD_real.view(1)
         errD_real.backward(self.one)
@@ -192,7 +192,7 @@ class CycleWGANModel(BaseModel):
         #import pdb; pdb.set_trace()
 
         # Fake
-        errD_fake = netD.forward(fake) # named it as it WGAN-github
+        errD_fake = netD(fake) # named it as it WGAN-github
         errD_fake = errD_fake.mean()  # following DCGAN_D::forward function in WGAN-github
         errD_fake = errD_fake.view(1)
 
@@ -211,14 +211,14 @@ class CycleWGANModel(BaseModel):
 
     def backward_D_A(self):
         self.freeze_generators(True)
-        self.fake_B = self.netG_A.forward(self.real_A)
+        self.fake_B = self.netG_A(self.real_A)
         self.freeze_generators(False)
         self.loss_D_A_real, self.loss_D_A_fake = self.backward_D_basic(self.netD_A, self.real_B, self.fake_B)
         # self.loss_D_A = self.backward_D_basic(self.netD_A, self.real_B, self.fake_B)
 
     def backward_D_B(self):
         self.freeze_generators(True)
-        self.fake_A = self.netG_B.forward(self.real_B)
+        self.fake_A = self.netG_B(self.real_B)
         self.freeze_generators(False)
         self.loss_D_B_real, self.loss_D_B_fake = self.backward_D_basic(self.netD_B, self.real_A, self.fake_A)
         # self.loss_D_B = self.backward_D_basic(self.netD_B, self.real_A, self.fake_A)
@@ -248,27 +248,29 @@ class CycleWGANModel(BaseModel):
         # Identity loss
         if lambda_idt > 0:
             # G_A should be identity if real_B is fed.
-            self.idt_A = self.netG_A.forward(self.real_B)
+            self.idt_A = self.netG_A(self.real_B)
             self.loss_idt_A = self.criterionIdt(self.idt_A, self.real_B) * lambda_B * lambda_idt
             # G_B should be identity if real_A is fed.
-            self.idt_B = self.netG_B.forward(self.real_A)
+            self.idt_B = self.netG_B(self.real_A)
             self.loss_idt_B = self.criterionIdt(self.idt_B, self.real_A) * lambda_A * lambda_idt
         else:
             self.loss_idt_A = 0
             self.loss_idt_B = 0
 
+        self.freeze_discriminators(True)
+
         # WGAN loss
         # D_A(G_A(A))
-        self.fake_B = self.netG_A.forward(self.real_A)
-        self.loss_G_A = self.netD_A.forward(self.fake_B) # as in WGAN-github: errG = netD(fake)
+        self.fake_B = self.netG_A(self.real_A)
+        self.loss_G_A = self.netD_A(self.fake_B) # as in WGAN-github: errG = netD(fake)
         self.loss_G_A = self.loss_G_A.mean()  # following DCGAN_D::forward function in WGAN-github
         self.loss_G_A = self.loss_G_A.view(1)
         self.loss_G_A.backward(self.one, retain_graph=True) # as in WGAN-github: errG.backward(one)
         # FIXME: Api docs says not to use retain_graph and this can be done efficiently in other ways 
 
         # D_B(G_B(B))
-        self.fake_A = self.netG_B.forward(self.real_B)
-        self.loss_G_B = self.netD_B.forward(self.fake_A)
+        self.fake_A = self.netG_B(self.real_B)
+        self.loss_G_B = self.netD_B(self.fake_A)
         self.loss_G_B = self.loss_G_B.mean()  # following DCGAN_D::forward function in WGAN-github
         self.loss_G_B = self.loss_G_B.view(1)
         self.loss_G_B.backward(self.one, retain_graph=True)
@@ -276,11 +278,11 @@ class CycleWGANModel(BaseModel):
 
         
         # Forward cycle loss
-        self.rec_A = self.netG_B.forward(self.fake_B) 
+        self.rec_A = self.netG_B(self.fake_B) 
         self.loss_cycle_A = self.criterionCycle(self.rec_A, self.real_A) * lambda_A
         
         # Backward cycle loss
-        self.rec_B = self.netG_A.forward(self.fake_A)
+        self.rec_B = self.netG_A(self.fake_A)
         self.loss_cycle_B = self.criterionCycle(self.rec_B, self.real_B) * lambda_B
 
         # Perceptual losses:
@@ -300,6 +302,8 @@ class CycleWGANModel(BaseModel):
         self.loss_G = self.loss_cycle_A + self.loss_cycle_B \
                         + self.loss_idt_A + self.loss_idt_B + self.feat_loss
         self.loss_G.backward()
+
+        self.freeze_discriminators(False)
 
     def optimize_parameters_D(self):
         # call self.forward outside!
