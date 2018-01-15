@@ -352,13 +352,13 @@ class CycleWGANModel(BaseModel):
         if self.opt.identity > 0.0:
             idt_A = self.loss_idt_A.data[0]
             idt_B = self.loss_idt_B.data[0]
-            return OrderedDict([('D_A_real', D_A_real), ('D_A_fake', D_A_fake), ('D_A', D_A), #('G_A', G_A), ('Cyc_A', Cyc_A), ('idt_A', idt_A),
-                                ('D_B_real', D_B_real), ('D_B_fake', D_B_fake), ('D_B', D_B), # ('G_B', G_B), ('Cyc_B', Cyc_B), ('idt_B', idt_B),
+            return OrderedDict([('D_A_real', D_A_real), ('D_A_fake', D_A_fake), ('D_A', D_A), ('G_A', G_A), ('Cyc_A', Cyc_A), ('idt_A', idt_A),
+                                ('D_B_real', D_B_real), ('D_B_fake', D_B_fake), ('D_B', D_B), ('G_B', G_B), ('Cyc_B', Cyc_B), ('idt_B', idt_B),
                                 ('featL', featL)]) #, ('feat_fArecB', feat_fArecB), ('feat_fBrecA', feat_fBrecA), ('feat_AfB', feat_AfB), ('feat_BfA', feat_BfA), 
                                 #('feat_ArecA', feat_ArecA), ('feat_BrecB', feat_BrecB)]) #, ('featL', featL)])
         else:
-            return OrderedDict([('D_A_real', D_A_real), ('D_A_fake', D_A_fake), ('D_A', D_A), #('G_A', G_A), ('Cyc_A', Cyc_A),
-                                ('D_B_real', D_B_real), ('D_B_fake', D_B_fake), ('D_B', D_B), #('G_B', G_B), ('Cyc_B', Cyc_B),
+            return OrderedDict([('D_A_real', D_A_real), ('D_A_fake', D_A_fake), ('D_A', D_A), ('G_A', G_A), ('Cyc_A', Cyc_A),
+                                ('D_B_real', D_B_real), ('D_B_fake', D_B_fake), ('D_B', D_B), ('G_B', G_B), ('Cyc_B', Cyc_B),
                                 ('featL', featL)]) #, ('feat_fArecB', feat_fArecB), ('feat_fBrecA', feat_fBrecA), ('feat_AfB', feat_AfB), ('feat_BfA', feat_BfA), 
                                 #('feat_ArecA', feat_ArecA), ('feat_BrecB', feat_BrecB)]) #, ('featL', featL)])
 

@@ -40,7 +40,7 @@ for epoch in range(1, opt.nepoch + opt.nepoch_decay + 1):
         model.freeze_discriminators(False) # will train discriminators
 
         # train the discriminators Diters times
-        if gen_iterations < 25 or gen_iterations % 500 == 0:
+        if (gen_iterations < 25 and not opt.skip_warmup) or (gen_iterations % 500 == 0 and gen_iterations > 0):
             diters = 100
         else:
             diters = opt.diter
