@@ -1,1 +1,1 @@
-python train_wgan.py --dataroot ./datasets/RainRemoval --name RainRemoval05 --model cycle_wgan --no_dropout --batchSize 1 --display_id 1 --nepoch 100 --nepoch_decay 200 --lambda_A 10.0 --lambda_B 10.0 --lambda_feat 1.0 --print_freq 1 --display_freq 5
+python train_wgan.py --dataroot ./datasets/RainRemoval --name RainRemoval06 --model cycle_wgan --no_dropout --batchSize 1 --display_id 1 --nepoch 100 --nepoch_decay 200 --lambda_A 10.0 --lambda_B 10.0 --lambda_feat 1.0 --print_freq 1 --display_freq 5

@@ -115,9 +115,15 @@ class CycleWGANModel(BaseModel):
         if self.isTrain:
             self.old_lr = opt.lr
             
-            # let's remove the pools of fake images.
-            # self.fake_A_pool = ImagePool(opt.pool_size)
-            # self.fake_B_pool = ImagePool(opt.pool_size)
+            # create pools of fake images, if pool size > 0
+            if opt.pool_size > 0:
+                self.fake_A_pool = ImagePool(opt.pool_size)
+                self.fake_B_pool = ImagePool(opt.pool_size)
+                self.fake_A = None
+                self.fake_B = None
+            else:
+                self.fake_A_pool = None
+                self.fake_B_pool = None
 
             # define loss functions
             # Note: use WGAN loss for cases where we use D_A or D_B, otherwise use default loss functions
@@ -200,20 +206,22 @@ class CycleWGANModel(BaseModel):
         return errD_real, errD_fake         
 
     def backward_D_A(self):
-        #self.freeze_generators(True)
-        self.fake_B = self.netG_A(self.real_A)
-        #self.freeze_generators(False)
-        self.loss_D_A_real, self.loss_D_A_fake = self.backward_D_basic(self.netD_A, self.real_B, self.fake_B)
-        # self.loss_D_A = self.backward_D_basic(self.netD_A, self.real_B, self.fake_B)
-        #print("AFTER backward_D_A()")
-        #print(self.netD_A.model[11].weight.data.norm())
+        if self.fake_B_pool is None or self.fake_B is None:            
+            self.fake_B = self.netG_A(self.real_A) # generate a fake image
+            self.loss_D_A_real, self.loss_D_A_fake = self.backward_D_basic(self.netD_A, self.real_B, self.fake_B)
+        else:            
+            fake_B = self.fake_B_pool.query(self.fake_B)
+            self.loss_D_A_real, self.loss_D_A_fake = self.backward_D_basic(self.netD_A, self.real_B, fake_B)
+        
 
     def backward_D_B(self):
-        #self.freeze_generators(True)
-        self.fake_A = self.netG_B(self.real_B)
-        #self.freeze_generators(False)
-        self.loss_D_B_real, self.loss_D_B_fake = self.backward_D_basic(self.netD_B, self.real_A, self.fake_A)
-        # self.loss_D_B = self.backward_D_basic(self.netD_B, self.real_A, self.fake_A)
+        if self.fake_A_pool is None or self.fake_A is None:
+            self.fake_A = self.netG_B(self.real_B)        
+            self.loss_D_B_real, self.loss_D_B_fake = self.backward_D_basic(self.netD_B, self.real_A, self.fake_A)
+        else:
+            fake_A = self.fake_A_pool.query(self.fake_A)
+            self.loss_D_B_real, self.loss_D_B_fake = self.backward_D_basic(self.netD_B, self.real_A, fake_A)
+        
 
     def backward_G(self):
         lambda_idt = self.opt.identity
@@ -254,15 +262,11 @@ class CycleWGANModel(BaseModel):
 
         # WGAN loss
         # D_A(G_A(A))
-        self.fake_B = self.netG_A(self.real_A)
-        #print("BEFORE self.loss_G_A.backward()")
-        #print(self.netD_A.model[11].weight.data.norm())
+        self.fake_B = self.netG_A(self.real_A)        
         self.loss_G_A = self.netD_A(self.fake_B) # as in WGAN-github: errG = netD(fake)
         self.loss_G_A = self.loss_G_A.mean()  # following DCGAN_D::forward function in WGAN-github
         self.loss_G_A = self.loss_G_A.view(1)
         self.loss_G_A.backward(self.one, retain_graph=True) # as in WGAN-github: errG.backward(one)
-        #print("AFTER self.loss_G_A.backward()")
-        #print(self.netD_A.model[11].weight.data.norm())
         # FIXME: Api docs says not to use retain_graph and this can be done efficiently in other ways 
 
         # D_B(G_B(B))
