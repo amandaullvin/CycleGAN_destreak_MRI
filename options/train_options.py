@@ -19,7 +19,7 @@ class TrainOptions(BaseOptions):
         self.parser.add_argument('--beta1', type=float, default=0.5, help='momentum term of adam')
         self.parser.add_argument('--lr', type=float, default=0.00005, help='initial learning rate for RMSProp (use 0.0002 for Adam)')
         self.parser.add_argument('--no_lsgan', action='store_true', help='do *not* use least square GAN, if false, use vanilla GAN')
-        self.parser.add_argument('--clip_lower', type=float, default=0.01, help='Clipping: Lower limit for Discriminator weights')
+        self.parser.add_argument('--clip_lower', type=float, default=-0.01, help='Clipping: Lower limit for Discriminator weights')
         self.parser.add_argument('--clip_upper', type=float, default=0.01, help='Clipping: Upper limit for Discriminator weights')
         self.parser.add_argument('--lambda_A', type=float, default=10.0, help='weight for cycle loss (A -> B -> A)')
         self.parser.add_argument('--lambda_B', type=float, default=10.0, help='weight for cycle loss (B -> A -> B)')

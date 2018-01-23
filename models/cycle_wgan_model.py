@@ -99,6 +99,8 @@ class CycleWGANModel(BaseModel):
 
             #self.netD_A.model[11].register_forward_hook(printnorm)
             #self.netD_A.model[11].register_backward_hook(printgradnorm)
+            #self.netG_A.register_forward_hook(printnorm)
+            #self.netG_A.register_backward_hook(printgradnorm)
             #self.netD_B.model[11].register_forward_hook(printnorm)
             #self.netD_B.model[11].register_backward_hook(printgradnorm)
 
@@ -182,44 +184,34 @@ class CycleWGANModel(BaseModel):
         return self.image_paths
 
     def backward_D_basic(self, netD, real, fake):
-        # Real
-        #realcopy = real.clone()
+        # Real        
         errD_real = netD(real) # named it as in WGAN-github
         errD_real = errD_real.mean()  # following DCGAN_D::forward function in WGAN-github
         errD_real = errD_real.view(1)
-        errD_real.backward(self.one)
-
-        #import pdb; pdb.set_trace()
+        errD_real.backward(self.one)       
 
         # Fake
-        errD_fake = netD(fake) # named it as it WGAN-github
+        errD_fake = netD(fake.detach()) # named it as it WGAN-github
+        # calling detach stops backpropagation through netG caused by errD_fake.backward(self.mone)
         errD_fake = errD_fake.mean()  # following DCGAN_D::forward function in WGAN-github
         errD_fake = errD_fake.view(1)
-
-        #pdb.set_trace()
-
-        # compute gradients for both
         errD_fake.backward(self.mone)
 
-        #pdb.set_trace()
-
-        # errD = errD_real - errD_fake # it's the approximation of  Wasserstein distance between Preal and Pgenerator
-        # errD.backward(self.one)
-
-        return errD_real, errD_fake 
-        # return errD
+        return errD_real, errD_fake         
 
     def backward_D_A(self):
-        self.freeze_generators(True)
+        #self.freeze_generators(True)
         self.fake_B = self.netG_A(self.real_A)
-        self.freeze_generators(False)
+        #self.freeze_generators(False)
         self.loss_D_A_real, self.loss_D_A_fake = self.backward_D_basic(self.netD_A, self.real_B, self.fake_B)
         # self.loss_D_A = self.backward_D_basic(self.netD_A, self.real_B, self.fake_B)
+        #print("AFTER backward_D_A()")
+        #print(self.netD_A.model[11].weight.data.norm())
 
     def backward_D_B(self):
-        self.freeze_generators(True)
+        #self.freeze_generators(True)
         self.fake_A = self.netG_B(self.real_B)
-        self.freeze_generators(False)
+        #self.freeze_generators(False)
         self.loss_D_B_real, self.loss_D_B_fake = self.backward_D_basic(self.netD_B, self.real_A, self.fake_A)
         # self.loss_D_B = self.backward_D_basic(self.netD_B, self.real_A, self.fake_A)
 
@@ -257,15 +249,20 @@ class CycleWGANModel(BaseModel):
             self.loss_idt_A = 0
             self.loss_idt_B = 0
 
+        # Freeze discriminators so that they are NOT updated
         self.freeze_discriminators(True)
 
         # WGAN loss
         # D_A(G_A(A))
         self.fake_B = self.netG_A(self.real_A)
+        #print("BEFORE self.loss_G_A.backward()")
+        #print(self.netD_A.model[11].weight.data.norm())
         self.loss_G_A = self.netD_A(self.fake_B) # as in WGAN-github: errG = netD(fake)
         self.loss_G_A = self.loss_G_A.mean()  # following DCGAN_D::forward function in WGAN-github
         self.loss_G_A = self.loss_G_A.view(1)
         self.loss_G_A.backward(self.one, retain_graph=True) # as in WGAN-github: errG.backward(one)
+        #print("AFTER self.loss_G_A.backward()")
+        #print(self.netD_A.model[11].weight.data.norm())
         # FIXME: Api docs says not to use retain_graph and this can be done efficiently in other ways 
 
         # D_B(G_B(B))
@@ -275,6 +272,9 @@ class CycleWGANModel(BaseModel):
         self.loss_G_B = self.loss_G_B.view(1)
         self.loss_G_B.backward(self.one, retain_graph=True)
         # FIXME: Api docs says not to use retain_graph and this can be done efficiently in other ways 
+
+        # Unfreeze them for the next iteration of optimize_parameters_D()
+        self.freeze_discriminators(False)
 
         
         # Forward cycle loss
@@ -303,29 +303,27 @@ class CycleWGANModel(BaseModel):
                         + self.loss_idt_A + self.loss_idt_B + self.feat_loss
         self.loss_G.backward()
 
-        self.freeze_discriminators(False)
+        
 
     def optimize_parameters_D(self):
         # call self.forward outside!
 
         # D_A
-        self.optimizer_D_A.zero_grad()
-        #self.netD_A.zero_grad()
+        self.optimizer_D_A.zero_grad()        
         self.backward_D_A() # generates fake_B for the iteration
         self.optimizer_D_A.step()        
 
         # D_B
-        self.optimizer_D_B.zero_grad()
-        #self.netD_B.zero_grad()
+        self.optimizer_D_B.zero_grad()        
         self.backward_D_B() # generates fake_B for the iteration
         self.optimizer_D_B.step()
 
         # clip weights for both discriminators
         for p in self.netD_A.parameters():
-            p.data.clamp_(-self.opt.clip_lower, self.opt.clip_upper)
+            p.data.clamp_(self.opt.clip_lower, self.opt.clip_upper)
 
         for p in self.netD_B.parameters():
-            p.data.clamp_(-self.opt.clip_lower, self.opt.clip_upper)
+            p.data.clamp_(self.opt.clip_lower, self.opt.clip_upper)
 
     def optimize_parameters_G(self):
         # call self.forward outside!
