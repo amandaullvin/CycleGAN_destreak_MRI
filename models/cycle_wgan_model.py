@@ -130,6 +130,7 @@ class CycleWGANModel(BaseModel):
             self.criterionCycle = torch.nn.L1Loss()
             self.criterionIdt = torch.nn.L1Loss()
             self.criterionFeat = mse_loss
+            self.criterionWGAN = networks.WGANLoss()
             # initialize optimizers
             if opt.adam:
                 self.optimizer_G = torch.optim.Adam(itertools.chain(self.netG_A.parameters(), self.netG_B.parameters()),
@@ -167,6 +168,7 @@ class CycleWGANModel(BaseModel):
     def test(self):
         self.real_A = Variable(self.input_A, volatile=True)
         self.fake_B = self.netG_A.forward(self.real_A)
+        import pdb; pdb.set_trace()
         self.rec_A = self.netG_B.forward(self.fake_B)
 
         self.real_B = Variable(self.input_B, volatile=True)
@@ -191,36 +193,47 @@ class CycleWGANModel(BaseModel):
 
     def backward_D_basic(self, netD, real, fake):
         # Real        
-        errD_real = netD(real) # named it as in WGAN-github
-        errD_real = errD_real.mean()  # following DCGAN_D::forward function in WGAN-github
-        errD_real = errD_real.view(1)
-        errD_real.backward(self.one)       
+        # errD_real = netD(real) # named it as in WGAN-github
+        # errD_real = errD_real.mean()  # following DCGAN_D::forward function in WGAN-github
+        # errD_real = errD_real.view(1)
+        # errD_real.backward(self.one)       
 
-        # Fake
-        errD_fake = netD(fake.detach()) # named it as it WGAN-github
-        # calling detach stops backpropagation through netG caused by errD_fake.backward(self.mone)
-        errD_fake = errD_fake.mean()  # following DCGAN_D::forward function in WGAN-github
-        errD_fake = errD_fake.view(1)
-        errD_fake.backward(self.mone)
+        # # Fake
+        # errD_fake = netD(fake.detach()) # named it as it WGAN-github
+        # # calling detach stops backpropagation through netG caused by errD_fake.backward(self.mone)
+        # errD_fake = errD_fake.mean()  # following DCGAN_D::forward function in WGAN-github
+        # errD_fake = errD_fake.view(1)
+        # errD_fake.backward(self.mone)
 
-        return errD_real, errD_fake         
+        # return errD_real, errD_fake
+
+        # compute outputs for real and fake images
+        outD_real = netD(real)
+        outD_fake = netD(fake.detach())
+        wloss = self.criterionWGAN(fake=outD_fake, real=outD_real)
+        wloss.backward()
+        return wloss
 
     def backward_D_A(self):
         if self.fake_B_pool is None or self.fake_B is None:            
             self.fake_B = self.netG_A(self.real_A) # generate a fake image
-            self.loss_D_A_real, self.loss_D_A_fake = self.backward_D_basic(self.netD_A, self.real_B, self.fake_B)
+            #self.loss_D_A_real, self.loss_D_A_fake = self.backward_D_basic(self.netD_A, self.real_B, self.fake_B)
+            self.loss_D_A = self.backward_D_basic(self.netD_A, self.real_B, self.fake_B)
         else:            
             fake_B = self.fake_B_pool.query(self.fake_B)
-            self.loss_D_A_real, self.loss_D_A_fake = self.backward_D_basic(self.netD_A, self.real_B, fake_B)
+            #self.loss_D_A_real, self.loss_D_A_fake = self.backward_D_basic(self.netD_A, self.real_B, fake_B)
+            self.loss_D_A = self.backward_D_basic(self.netD_A, self.real_B, fake_B)
         
 
     def backward_D_B(self):
         if self.fake_A_pool is None or self.fake_A is None:
             self.fake_A = self.netG_B(self.real_B)        
-            self.loss_D_B_real, self.loss_D_B_fake = self.backward_D_basic(self.netD_B, self.real_A, self.fake_A)
+            #self.loss_D_B_real, self.loss_D_B_fake = self.backward_D_basic(self.netD_B, self.real_A, self.fake_A)
+            self.loss_D_B = self.backward_D_basic(self.netD_B, self.real_A, self.fake_A)
         else:
             fake_A = self.fake_A_pool.query(self.fake_A)
-            self.loss_D_B_real, self.loss_D_B_fake = self.backward_D_basic(self.netD_B, self.real_A, fake_A)
+            #self.loss_D_B_real, self.loss_D_B_fake = self.backward_D_basic(self.netD_B, self.real_A, fake_A)
+            self.loss_D_B = self.backward_D_basic(self.netD_B, self.real_A, fake_A)
         
 
     def backward_G(self):
@@ -263,18 +276,27 @@ class CycleWGANModel(BaseModel):
         # WGAN loss
         # D_A(G_A(A))
         self.fake_B = self.netG_A(self.real_A)        
-        self.loss_G_A = self.netD_A(self.fake_B) # as in WGAN-github: errG = netD(fake)
-        self.loss_G_A = self.loss_G_A.mean()  # following DCGAN_D::forward function in WGAN-github
-        self.loss_G_A = self.loss_G_A.view(1)
-        self.loss_G_A.backward(self.one, retain_graph=True) # as in WGAN-github: errG.backward(one)
+        #self.loss_G_A = self.netD_A(self.fake_B) # as in WGAN-github: errG = netD(fake)
+        #self.loss_G_A = self.loss_G_A.mean()  # following DCGAN_D::forward function in WGAN-github
+        #self.loss_G_A = self.loss_G_A.view(1)
+        #self.loss_G_A.backward(self.one, retain_graph=True) # as in WGAN-github: errG.backward(one)        
+        
+        outD_A_fake = self.netD_A(self.fake_B)
+        self.loss_G_A = self.criterionWGAN(real=outD_A_fake) # we give as it was a true sample
+        self.loss_G_A.backward(retain_graph=True)
+        
         # FIXME: Api docs says not to use retain_graph and this can be done efficiently in other ways 
 
         # D_B(G_B(B))
         self.fake_A = self.netG_B(self.real_B)
-        self.loss_G_B = self.netD_B(self.fake_A)
-        self.loss_G_B = self.loss_G_B.mean()  # following DCGAN_D::forward function in WGAN-github
-        self.loss_G_B = self.loss_G_B.view(1)
-        self.loss_G_B.backward(self.one, retain_graph=True)
+        #self.loss_G_B = self.netD_B(self.fake_A)
+        #self.loss_G_B = self.loss_G_B.mean()  # following DCGAN_D::forward function in WGAN-github
+        #self.loss_G_B = self.loss_G_B.view(1)
+        #self.loss_G_B.backward(self.one, retain_graph=True)
+        
+        outD_B_fake = self.netD_B(self.fake_A)
+        self.loss_G_B = self.criterionWGAN(real=outD_B_fake)
+        self.loss_G_B.backward(retain_graph=True)
         # FIXME: Api docs says not to use retain_graph and this can be done efficiently in other ways 
 
         # Unfreeze them for the next iteration of optimize_parameters_D()
@@ -338,12 +360,14 @@ class CycleWGANModel(BaseModel):
         self.optimizer_G.step()
 
     def get_current_errors(self):
-        D_A_real, D_A_fake = self.loss_D_A_real.data[0], self.loss_D_A_fake.data[0] 
-        D_A = D_A_real - D_A_fake
+        #D_A_real, D_A_fake = self.loss_D_A_real.data[0], self.loss_D_A_fake.data[0] 
+        #D_A = D_A_real - D_A_fake
+        D_A = self.loss_D_A.data[0]
         G_A = self.loss_G_A.data[0]
         Cyc_A = self.loss_cycle_A.data[0]
-        D_B_real, D_B_fake = self.loss_D_B_real.data[0], self.loss_D_B_fake.data[0] 
-        D_B = D_B_real - D_B_fake
+        #D_B_real, D_B_fake = self.loss_D_B_real.data[0], self.loss_D_B_fake.data[0] 
+        #D_B = D_B_real - D_B_fake
+        D_B = self.loss_D_B.data[0]
         # D_B = self.loss_D_B.data[0]
         G_B = self.loss_G_B.data[0]
         Cyc_B = self.loss_cycle_B.data[0]
@@ -363,8 +387,9 @@ class CycleWGANModel(BaseModel):
                                 ('featL', featL)]) #, ('feat_fArecB', feat_fArecB), ('feat_fBrecA', feat_fBrecA), ('feat_AfB', feat_AfB), ('feat_BfA', feat_BfA), 
                                 #('feat_ArecA', feat_ArecA), ('feat_BrecB', feat_BrecB)]) #, ('featL', featL)])
         else:
-            return OrderedDict([('D_A_real', D_A_real), ('D_A_fake', D_A_fake), ('D_A', D_A), ('G_A', G_A), ('Cyc_A', Cyc_A),
-                                ('D_B_real', D_B_real), ('D_B_fake', D_B_fake), ('D_B', D_B), ('G_B', G_B), ('Cyc_B', Cyc_B),
+            return OrderedDict([#('D_A_real', D_A_real), ('D_A_fake', D_A_fake), ('D_B_real', D_B_real), ('D_B_fake', D_B_fake), 
+                                ('D_A', D_A), ('D_B', D_B),
+                                ('G_A', G_A), ('Cyc_A', Cyc_A), ('G_B', G_B), ('Cyc_B', Cyc_B),
                                 ('featL', featL)]) #, ('feat_fArecB', feat_fArecB), ('feat_fBrecA', feat_fBrecA), ('feat_AfB', feat_AfB), ('feat_BfA', feat_BfA), 
                                 #('feat_ArecA', feat_ArecA), ('feat_BrecB', feat_BrecB)]) #, ('featL', featL)])
 

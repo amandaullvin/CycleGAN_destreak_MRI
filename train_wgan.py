@@ -65,6 +65,8 @@ for epoch in range(1, opt.nepoch + opt.nepoch_decay + 1):
                 errors = model.get_current_errors()
                 t = (time.time() - iter_start_time) / opt.batchSize
                 visualizer.print_current_errors(epoch, epoch_iter, errors, t)
+                if opt.display_id > 0:
+                    visualizer.plot_current_errors(epoch, float(epoch_iter)/dataset_size, opt, errors)
             
         # if we consume the dataset during training D, just start new epoch without training G
         if i >= len(dataset):
