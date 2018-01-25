@@ -164,11 +164,13 @@ class WGANLoss(nn.Module):
         if fake is None and real is None:
             raise ValueError('WGAN Loss expect either a "fake" image or both "real" and "fake" images.')
         elif fake is None: # only one image is given (from backward_G, where we want to train G)
-            wloss = real.mean()
+            wloss = real.mean()            
             wloss = wloss.view(1)
             return wloss
         else: # both images are given (from backward_D, where we want to train D)
             wloss = real.mean() - fake.mean()
+            import pdb; pdb.set_trace()
+            wloss = wloss.abs()
             wloss = wloss.view(1)
             return wloss
 
