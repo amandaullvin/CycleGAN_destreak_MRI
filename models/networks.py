@@ -169,8 +169,8 @@ class WGANLoss(nn.Module):
             return wloss
         else: # both images are given (from backward_D, where we want to train D)
             wloss = real.mean() - fake.mean()
-            import pdb; pdb.set_trace()
-            wloss = wloss.abs()
+            #import pdb; pdb.set_trace()
+            #wloss = wloss.abs()
             wloss = wloss.view(1)
             return wloss
 
@@ -439,7 +439,8 @@ class NLayerDiscriminator(nn.Module):
         sequence += [nn.Conv2d(ndf * nf_mult, 1, kernel_size=kw, stride=1, padding=padw, bias=False)] # FIXME bias=False might not be optimal for standard CycleGAN
 
         if use_sigmoid:
-            sequence += [nn.Sigmoid()]
+            #sequence += [nn.Sigmoid()] # FIXME!!
+            sequence += [nn.Tanh()]
 
         self.model = nn.Sequential(*sequence)
 
