@@ -51,7 +51,7 @@ def define_G(input_nc, output_nc, ngf, which_model_netG, norm='batch', use_dropo
     elif which_model_netG == 'unet_128':
         netG = UnetGenerator(input_nc, output_nc, 7, ngf, norm_layer=norm_layer, use_dropout=use_dropout, gpu_ids=gpu_ids)
     elif which_model_netG == 'unet_256':
-        netG = UnetGenerator(input_nc, output_nc, 8, ngf, norm_layer=norm_layer, use_dropout=use_dropout, gpu_ids=gpu_ids)
+        netG = UnetGenerator(input_nc, output_nc, 8, ngf, norm_layer=norm_layer, use_dropout=use_dropout, gpu_ids=gpu_ids)    
     else:
         raise NotImplementedError('Generator model name [%s] is not recognized' % which_model_netG)
     if len(gpu_ids) > 0:
@@ -73,7 +73,8 @@ def define_D(input_nc, ndf, which_model_netD,
     elif which_model_netD == 'n_layers':
         netD = NLayerDiscriminator(input_nc, ndf, n_layers_D, norm_layer=norm_layer, use_sigmoid=use_sigmoid, gpu_ids=gpu_ids)
     elif which_model_netD == 'dcgan':
-        netD = DCGAN_D(input_nc, ndf, 256, gpu_ids, n_extra_layers=1) # FIXME! isize instead of 256!! extra layers from arguments!!
+        # input_nc, ndf, isize, gpu_ids=[], n_extra_layers=0
+        netD = DCGAN_D(input_nc, ndf, 256, gpu_ids, n_extra_layers=0) # FIXME! isize instead of 256!! extra layers from arguments!!
     else:
         raise NotImplementedError('Discriminator model name [%s] is not recognized' %
                                   which_model_netD)
@@ -164,7 +165,7 @@ class WGANLoss(nn.Module):
         if fake is None and real is None:
             raise ValueError('WGAN Loss expect either a "fake" image or both "real" and "fake" images.')
         elif fake is None: # only one image is given (from backward_G, where we want to train G)
-            wloss = real.mean()            
+            wloss = real.mean()
             wloss = wloss.view(1)
             return wloss
         else: # both images are given (from backward_D, where we want to train D)
@@ -402,6 +403,59 @@ class DCGAN_D(nn.Module):
         output = output.mean(0)
         return output.view(1)
 
+class DCGAN_G(nn.Module):
+    def __init__(self, isize, nz, nc, ngf, gpu_ids=[], n_extra_layers=0):
+        super(DCGAN_G, self).__init__()
+        self.gpu_ids = gpu_ids
+        assert isize % 16 == 0, "isize has to be a multiple of 16"
+
+        cngf, tisize = ngf//2, 4
+        while tisize != isize:
+            cngf = cngf * 2
+            tisize = tisize * 2
+
+        main = nn.Sequential()
+        # input is Z, going into a convolution
+        main.add_module('initial.{0}-{1}.convt'.format(nz, cngf),
+                        nn.ConvTranspose2d(nz, cngf, 4, 1, 0, bias=False))
+        main.add_module('initial.{0}.batchnorm'.format(cngf),
+                        nn.BatchNorm2d(cngf))
+        main.add_module('initial.{0}.relu'.format(cngf),
+                        nn.ReLU(True))
+
+        csize, cndf = 4, cngf
+        while csize < isize//2:
+            main.add_module('pyramid.{0}-{1}.convt'.format(cngf, cngf//2),
+                            nn.ConvTranspose2d(cngf, cngf//2, 4, 2, 1, bias=False))
+            main.add_module('pyramid.{0}.batchnorm'.format(cngf//2),
+                            nn.BatchNorm2d(cngf//2))
+            main.add_module('pyramid.{0}.relu'.format(cngf//2),
+                            nn.ReLU(True))
+            cngf = cngf // 2
+            csize = csize * 2
+
+        # Extra layers
+        for t in range(n_extra_layers):
+            main.add_module('extra-layers-{0}.{1}.conv'.format(t, cngf),
+                            nn.Conv2d(cngf, cngf, 3, 1, 1, bias=False))
+            main.add_module('extra-layers-{0}.{1}.batchnorm'.format(t, cngf),
+                            nn.BatchNorm2d(cngf))
+            main.add_module('extra-layers-{0}.{1}.relu'.format(t, cngf),
+                            nn.ReLU(True))
+
+        main.add_module('final.{0}-{1}.convt'.format(cngf, nc),
+                        nn.ConvTranspose2d(cngf, nc, 4, 2, 1, bias=False))
+        main.add_module('final.{0}.tanh'.format(nc),
+                        nn.Tanh())
+        self.main = main
+
+    def forward(self, input):
+        if len(self.gpu_ids) and isinstance(input.data, torch.cuda.FloatTensor):
+            output = nn.parallel.data_parallel(self.main, input, self.gpu_ids)
+        else: 
+            output = self.main(input)
+        return output
+
 # Defines the PatchGAN discriminator with the specified arguments.
 class NLayerDiscriminator(nn.Module):
     def __init__(self, input_nc, ndf=64, n_layers=3, norm_layer=nn.BatchNorm2d, use_sigmoid=False, gpu_ids=[]):
@@ -439,13 +493,21 @@ class NLayerDiscriminator(nn.Module):
         sequence += [nn.Conv2d(ndf * nf_mult, 1, kernel_size=kw, stride=1, padding=padw, bias=False)] # FIXME bias=False might not be optimal for standard CycleGAN
 
         if use_sigmoid:
-            #sequence += [nn.Sigmoid()] # FIXME!!
-            sequence += [nn.Tanh()]
+            sequence += [nn.Sigmoid()] # FIXME!!
+            #sequence += [nn.Tanh()]
 
         self.model = nn.Sequential(*sequence)
 
     def forward(self, input):
         if len(self.gpu_ids) and isinstance(input.data, torch.cuda.FloatTensor):
+            # import pdb; pdb.set_trace()
+            # print("INPUT %s (min: %.5f, max: %.5f, mean: %.5f)" % (input.size(), input.min(), input.max(), input.mean()))            
+            # prevOut = input
+            # for i in range(12):
+            #     if (i == 3):
+            #         pdb.set_trace() 
+            #     prevOut = self.model[i](prevOut)
+            #     print("OUT%d %s (min: %.5f, max: %.5f, mean: %.5f)" % (i, prevOut.size(), prevOut.min(), prevOut.max(), prevOut.mean()))   
             return nn.parallel.data_parallel(self.model, input, self.gpu_ids)
         else:
             return self.model(input)
