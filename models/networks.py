@@ -19,6 +19,7 @@ def weights_init(m):
     classname = m.__class__.__name__
     if classname.find('Conv') != -1:
         m.weight.data.normal_(0.0, 0.02)
+        #m.weight.data.normal_(0.0, 0.01)
     elif classname.find('BatchNorm2d') != -1:
         m.weight.data.normal_(1.0, 0.02)
         m.bias.data.fill_(0)
@@ -169,9 +170,10 @@ class WGANLoss(nn.Module):
             wloss = wloss.view(1)
             return wloss
         else: # both images are given (from backward_D, where we want to train D)
+        # D wants this loss to be large
+            #wloss = real.mean() - fake.mean()
             wloss = real.mean() - fake.mean()
             #import pdb; pdb.set_trace()
-            #wloss = wloss.abs()
             wloss = wloss.view(1)
             return wloss
 
@@ -315,7 +317,8 @@ class UnetSkipConnectionBlock(nn.Module):
                              stride=2, padding=1)
         downrelu = nn.LeakyReLU(0.2, True)
         downnorm = norm_layer(inner_nc)
-        uprelu = nn.ReLU(True)
+        #uprelu = nn.ReLU(True) FIXME!!!
+        uprelu = nn.Tanh()
         upnorm = norm_layer(outer_nc)
 
         if outermost:
@@ -348,6 +351,18 @@ class UnetSkipConnectionBlock(nn.Module):
 
     def forward(self, x):
         if self.outermost:
+            # print("INPUT x         : min: %.8f max: %.8f mean: %.8f" % (x.min(), x.max(), x.mean()))
+            # out = self.model[0](x)
+            # print("OUT (0): Conv2d : min: %.8f max: %.8f mean: %.8f" % (out.min(), out.max(), out.mean()))
+            # out = self.model[1](out)
+            # print("OUT (1): UnetBl : min: %.8f max: %.8f mean: %.8f" % (out.min(), out.max(), out.mean()))
+            # out = self.model[2](out)
+            # print("OUT (2): Tanh   : min: %.8f max: %.8f mean: %.8f" % (out.min(), out.max(), out.mean()))
+            # out = self.model[3](out)
+            # print("OUT (3): ConvTr : min: %.8f max: %.8f mean: %.8f" % (out.min(), out.max(), out.mean()))
+            # out = self.model[4](out)
+            # print("OUT (4): Tanh   : min: %.8f max: %.8f mean: %.8f" % (out.min(), out.max(), out.mean()))
+            # print("------------------------------------------------")
             return self.model(x)
         else:
             return torch.cat([self.model(x), x], 1)
@@ -400,6 +415,12 @@ class DCGAN_D(nn.Module):
         else: 
             output = self.main(input)
             
+        # a = input
+        # print(a.size())
+        # for i in range(18):
+        #     a = self.main[i](a)
+        #     print(a.size())
+        #import pdb; pdb.set_trace()
         output = output.mean(0)
         return output.view(1)
 
@@ -500,14 +521,12 @@ class NLayerDiscriminator(nn.Module):
 
     def forward(self, input):
         if len(self.gpu_ids) and isinstance(input.data, torch.cuda.FloatTensor):
-            # import pdb; pdb.set_trace()
-            # print("INPUT %s (min: %.5f, max: %.5f, mean: %.5f)" % (input.size(), input.min(), input.max(), input.mean()))            
-            # prevOut = input
-            # for i in range(12):
-            #     if (i == 3):
-            #         pdb.set_trace() 
-            #     prevOut = self.model[i](prevOut)
-            #     print("OUT%d %s (min: %.5f, max: %.5f, mean: %.5f)" % (i, prevOut.size(), prevOut.min(), prevOut.max(), prevOut.mean()))   
+            import pdb; pdb.set_trace()
+            print(input.size())
+            prevOut = input
+            for i in range(len(self.model)):
+                prevOut = self.model[i](prevOut)
+                print(prevOut.size())
             return nn.parallel.data_parallel(self.model, input, self.gpu_ids)
         else:
             return self.model(input)
@@ -583,8 +602,6 @@ class ResNet34(nn.Module):
     #     x = self.layer3(x)
     #     x = self.layer4(x)
     #     return x
-
-
 
 class FeatureResNet34(nn.Module):
     def __init__(self, gpu_ids, **kwargs):

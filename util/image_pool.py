@@ -9,7 +9,7 @@ class ImagePool():
             self.num_imgs = 0
             self.images = []
 
-    def query(self, images):
+    def query(self, images):        
         if self.pool_size == 0:
             return images
         return_images = []

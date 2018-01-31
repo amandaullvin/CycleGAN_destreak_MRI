@@ -174,8 +174,7 @@ class CycleWGANModel(BaseModel):
 
     def test(self):
         self.real_A = Variable(self.input_A, volatile=True)
-        self.fake_B = self.netG_A.forward(self.real_A)
-        import pdb; pdb.set_trace()
+        self.fake_B = self.netG_A.forward(self.real_A)        
         self.rec_A = self.netG_B.forward(self.fake_B)
 
         self.real_B = Variable(self.input_B, volatile=True)
@@ -199,21 +198,6 @@ class CycleWGANModel(BaseModel):
         return self.image_paths
 
     def backward_D_basic(self, netD, real, fake):
-        # Real        
-        # errD_real = netD(real) # named it as in WGAN-github
-        # errD_real = errD_real.mean()  # following DCGAN_D::forward function in WGAN-github
-        # errD_real = errD_real.view(1)
-        # errD_real.backward(self.one)       
-
-        # # Fake
-        # errD_fake = netD(fake.detach()) # named it as it WGAN-github
-        # # calling detach stops backpropagation through netG caused by errD_fake.backward(self.mone)
-        # errD_fake = errD_fake.mean()  # following DCGAN_D::forward function in WGAN-github
-        # errD_fake = errD_fake.view(1)
-        # errD_fake.backward(self.mone)
-
-        # return errD_real, errD_fake
-
         # compute outputs for real and fake images
         outD_real = netD(real)
         outD_fake = netD(fake.detach())
@@ -221,27 +205,30 @@ class CycleWGANModel(BaseModel):
         #self.disp_outD_fake = outD_fake.mean()
         wloss = self.criterionWGAN(fake=outD_fake, real=outD_real)
         wloss.backward()
+
+        del wloss
+
         return outD_real.mean(), outD_fake.mean()
 
     def backward_D_A(self):
-        if self.fake_B_pool is None or self.fake_B is None:            
-            self.fake_B = self.netG_A(self.real_A) # generate a fake image            
-            self.loss_D_A_real, self.loss_D_A_fake = self.backward_D_basic(self.netD_A, self.real_B, self.fake_B)
+        #if self.fake_B_pool is None or self.fake_B is None:               
+            self.fake_B = self.netG_A(self.real_A.detach()) # generate a fake image                  
+            self.loss_D_A_real, self.loss_D_A_fake = self.backward_D_basic(self.netD_A, self.real_B, self.fake_B)            
             #self.loss_D_A = self.backward_D_basic(self.netD_A, self.real_B, self.fake_B)
-        else:            
-            fake_B = self.fake_B_pool.query(self.fake_B)
-            self.loss_D_A_real, self.loss_D_A_fake = self.backward_D_basic(self.netD_A, self.real_B, fake_B)
+        #else:            
+        #    fake_B = self.fake_B_pool.query(self.fake_B)            
+        #    self.loss_D_A_real, self.loss_D_A_fake = self.backward_D_basic(self.netD_A, self.real_B, fake_B)
             #self.loss_D_A = self.backward_D_basic(self.netD_A, self.real_B, fake_B)
         
 
     def backward_D_B(self):
-        if self.fake_A_pool is None or self.fake_A is None:
-            self.fake_A = self.netG_B(self.real_B)     
+        #if self.fake_A_pool is None or self.fake_A is None:
+            self.fake_A = self.netG_B(self.real_B.detach())     
             self.loss_D_B_real, self.loss_D_B_fake = self.backward_D_basic(self.netD_B, self.real_A, self.fake_A)
             #self.loss_D_B = self.backward_D_basic(self.netD_B, self.real_A, self.fake_A)
-        else:
-            fake_A = self.fake_A_pool.query(self.fake_A)
-            self.loss_D_B_real, self.loss_D_B_fake = self.backward_D_basic(self.netD_B, self.real_A, fake_A)
+        #else:
+        #    fake_A = self.fake_A_pool.query(self.fake_A)
+        #    self.loss_D_B_real, self.loss_D_B_fake = self.backward_D_basic(self.netD_B, self.real_A, fake_A)
             #self.loss_D_B = self.backward_D_basic(self.netD_B, self.real_A, fake_A)
         
 
@@ -267,64 +254,55 @@ class CycleWGANModel(BaseModel):
             lambda_feat_ArecA = self.opt.lambda_feat
             lambda_feat_BrecB = self.opt.lambda_feat
 
+
         # Identity loss
         if lambda_idt > 0:
             # G_A should be identity if real_B is fed.            
             self.idt_A = self.netG_A(self.real_B)
-            #self.loss_idt_A = self.criterionIdt(self.idt_A, self.real_B) * lambda_B * lambda_idt
+            self.loss_idt_A = self.criterionIdt(self.idt_A, self.real_B) * lambda_B * lambda_idt
             #self.loss_idt_A = self.criterionWGAN(fake=self.idt_A, real=self.real_B) * lambda_B * lambda_idt
-            self.loss_idt_A = self.criterionWGAN(fake=self.idt_A, real=self.real_B) * lambda_idt
+            #self.loss_idt_A = self.criterionWGAN(fake=self.idt_A, real=self.real_B) * lambda_idt
             # G_B should be identity if real_A is fed.
             self.idt_B = self.netG_B(self.real_A)
-            #self.loss_idt_B = self.criterionIdt(self.idt_B, self.real_A) * lambda_A * lambda_idt
+            self.loss_idt_B = self.criterionIdt(self.idt_B, self.real_A) * lambda_A * lambda_idt
             #self.loss_idt_B = self.criterionWGAN(fake=self.idt_B, real=self.real_A) * lambda_A * lambda_idt
-            self.loss_idt_B = self.criterionWGAN(fake=self.idt_B, real=self.real_A) * lambda_idt
+            #self.loss_idt_B = self.criterionWGAN(fake=self.idt_B, real=self.real_A) * lambda_idt
         else:
             self.loss_idt_A = 0
-            self.loss_idt_B = 0
+            self.loss_idt_B = 0        
         
         # Freeze discriminators so that they are NOT updated
         self.freeze_discriminators(True)
 
         # WGAN loss
         # D_A(G_A(A))
-        self.fake_B = self.netG_A(self.real_A)        
-        #self.loss_G_A = self.netD_A(self.fake_B) # as in WGAN-github: errG = netD(fake)
-        #self.loss_G_A = self.loss_G_A.mean()  # following DCGAN_D::forward function in WGAN-github
-        #self.loss_G_A = self.loss_G_A.view(1)
-        #self.loss_G_A.backward(self.one, retain_graph=True) # as in WGAN-github: errG.backward(one)        
-        
-        outD_A_fake = self.netD_A(self.fake_B)
+        self.fake_B = self.netG_A(self.real_A)                       
+        outD_A_fake = self.netD_A(self.fake_B)        
         self.loss_G_A = self.criterionWGAN(real=outD_A_fake) # we give as it was a true sample
         #self.loss_G_A.backward(retain_graph=True)
         
         # FIXME: Api docs says not to use retain_graph and this can be done efficiently in other ways 
 
-        # D_B(G_B(B))
-        self.fake_A = self.netG_B(self.real_B)
-        #self.loss_G_B = self.netD_B(self.fake_A)
-        #self.loss_G_B = self.loss_G_B.mean()  # following DCGAN_D::forward function in WGAN-github
-        #self.loss_G_B = self.loss_G_B.view(1)
-        #self.loss_G_B.backward(self.one, retain_graph=True)
-        
-        outD_B_fake = self.netD_B(self.fake_A)
-        self.loss_G_B = self.criterionWGAN(real=outD_B_fake)
+        # D_B(G_B(B))        
+        self.fake_A = self.netG_B(self.real_B)        
+        outD_B_fake = self.netD_B(self.fake_A)        
+        self.loss_G_B = self.criterionWGAN(real=outD_B_fake)        
         #self.loss_G_B.backward(retain_graph=True)        
 
         
         # Forward cycle loss
         if lambda_A != 0:
             self.rec_A = self.netG_B(self.fake_B) 
-            #self.loss_cycle_A = self.criterionCycle(self.rec_A, self.real_A) * lambda_A
-            self.loss_cycle_A = self.criterionWGAN(fake=self.rec_A, real=self.real_A) * lambda_A
+            self.loss_cycle_A = self.criterionCycle(self.rec_A, self.real_A) * lambda_A
+            #self.loss_cycle_A = self.criterionWGAN(fake=self.rec_A, real=self.real_A) * lambda_A
         else:
             self.loss_cycle_A = 0
         
         # Backward cycle loss
         if lambda_B != 0:
             self.rec_B = self.netG_A(self.fake_A)
-            #self.loss_cycle_B = self.criterionCycle(self.rec_B, self.real_B) * lambda_B
-            self.loss_cycle_B = self.criterionWGAN(fake=self.rec_B, real=self.real_B) * lambda_B
+            self.loss_cycle_B = self.criterionCycle(self.rec_B, self.real_B) * lambda_B
+            #self.loss_cycle_B = self.criterionWGAN(fake=self.rec_B, real=self.real_B) * lambda_B
         else:
             self.loss_cycle_B = 0
 
@@ -370,7 +348,9 @@ class CycleWGANModel(BaseModel):
             self.loss_sumGB.backward()
 
         # Unfreeze them for the next iteration of optimize_parameters_D()
-        self.freeze_discriminators(False)             
+        self.freeze_discriminators(False)  
+
+        del outD_A_fake, outD_B_fake 
 
         
 
@@ -378,27 +358,21 @@ class CycleWGANModel(BaseModel):
         # call self.forward outside!
 
         # D_A
-        self.optimizer_D_A.zero_grad()        
-        self.backward_D_A() # generates fake_B for the iteration
-        self.optimizer_D_A.step()        
+        self.optimizer_D_A.zero_grad()    
+        self.backward_D_A() # generates the first fake_B for the iteration
+        self.optimizer_D_A.step()                
 
         # D_B
         self.optimizer_D_B.zero_grad()        
-        self.backward_D_B() # generates fake_B for the iteration
+        self.backward_D_B() # generates fake_A for the iteration
         self.optimizer_D_B.step()
 
-        # clip weights for both discriminators
-        #import pdb; pdb.set_trace()
-        for p in self.netD_A.parameters():
-         #   temp = p.data
-            p.data.clamp_(self.opt.clip_lower, self.opt.clip_upper)
-          #  print("OLD (min: %.5f, max: %.5f, mean: %.5f)  NEW  (min: %.5f, max: %.5f, mean: %.5f)" \
-           #     % (temp.min(), temp.max(), temp.mean(), p.data.min(), p.data.max(), p.data.mean()))
+        # clip weights for both discriminators        
+        for p in self.netD_A.parameters():         
+            p.data.clamp_(self.opt.clip_lower, self.opt.clip_upper)          
 
         for p in self.netD_B.parameters():
             p.data.clamp_(self.opt.clip_lower, self.opt.clip_upper)
-
-        #print("mean(D_A_LastConvLayer): %.9f mean(D_B_LastConvLayer): %.9f" % (self.netD_A.model[11].weight.mean(), self.netD_B.model[11].weight.mean()))
 
     def optimize_parameters_G(self):
         # call self.forward outside!
@@ -406,22 +380,27 @@ class CycleWGANModel(BaseModel):
         # G_A and G_B
         self.optimizer_G.zero_grad()
         self.backward_G()
+#        print("GRADS A  : First conv (mean: %.8f) Last Deconv: (mean: %.8f)" % (self.netG_A.model.model[0].weight.grad.mean(), self.netG_A.model.model[3].weight.grad.mean()))
+#        print("GRADS B  : First conv (mean: %.8f) Last Deconv: (mean: %.8f)" % (self.netG_B.model.model[0].weight.grad.mean(), self.netG_B.model.model[3].weight.grad.mean()))
         self.optimizer_G.step()
+#        print("WEIGHTS A: First conv (mean: %.8f) Last Deconv: (mean: %.8f)" % (self.netG_A.model.model[0].weight.mean(), self.netG_A.model.model[3].weight.mean()))
+#        print("WEIGHTS B: First conv (mean: %.8f) Last Deconv: (mean: %.8f)" % (self.netG_B.model.model[0].weight.mean(), self.netG_B.model.model[3].weight.mean()))
         #print("mean(G_A_LastConvLayer): %.9f mean(G_B_LastConvLayer): %.9f" % (self.netG_A.model[26].weight.mean(), self.netG_B.model[26].weight.mean()))
 
     def get_current_errors(self):        
         #D_A = self.loss_D_A.data[0]        
         #D_B = self.loss_D_B.data[0]
-        #G_A = self.loss_G_A.data[0]
-        #G_B = self.loss_G_B.data[0]
+        G_A = self.loss_G_A.data[0]
+        G_B = self.loss_G_B.data[0]
         D_A_real, D_A_fake = self.loss_D_A_real.data[0], self.loss_D_A_fake.data[0]
         D_B_real, D_B_fake = self.loss_D_B_real.data[0], self.loss_D_B_fake.data[0]
-        sumGA = self.loss_sumGA.data[0]
-        sumGB = self.loss_sumGB.data[0]
+        #sumGA = self.loss_sumGA.data[0]
+        #sumGB = self.loss_sumGB.data[0]
+
         
         #currentErrors = OrderedDict([('D_A', D_A), ('D_B', D_B), ('sumGA', sumGA), ('sumGB', sumGB)])
         currentErrors = OrderedDict([('D_A_real', D_A_real), ('D_A_fake', D_A_fake), ('D_B_real', D_B_real), ('D_B_fake', D_B_fake),
-                                     ('sumGA', sumGA), ('sumGB', sumGB)])
+                                     ('G_A', G_A), ('G_B', G_B)])
 
 
         if self.loss_cycle_A is not 0:
