@@ -209,7 +209,7 @@ class CycleWGANModel(BaseModel):
         #self.disp_outD_fake = outD_fake.mean()
         wloss = self.criterionWGAN(fake=outD_fake, real=outD_real)
         # import pdb; pdb.set_trace()
-        if opt.which_model_netD == 'dcgan':
+        if self.opt.which_model_netD == 'dcgan':
             wloss.backward(self.ones)
         else:
             wloss.backward()
@@ -350,7 +350,7 @@ class CycleWGANModel(BaseModel):
 
             self.feat_loss.backward()
         else:
-            if opt.which_model_netD == 'dcgan':
+            if self.opt.which_model_netD == 'dcgan':
                 self.loss_sumGA.backward(self.ones)
                 self.loss_sumGB.backward(self.ones)
             else:
