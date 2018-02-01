@@ -57,7 +57,9 @@ class CycleWGANModel(BaseModel):
         self.mone = self.one * -1
         
         if opt.which_model_netD != 'dcgan':
-            self.ones = torch.ones(1, 35, 35) # FIXME compute size from input and architecture of netD
+            self.ones = torch.ones(1, 19, 19) # FIXME compute size from input and architecture of netD
+            self.ones = self.ones.type(new_type=self.Tensor)
+            
 
         # init G related losses to 0 to print in the first few iterations
         self.loss_G_A = Variable(self.Tensor([0]))
@@ -402,7 +404,12 @@ class CycleWGANModel(BaseModel):
         #D_A = self.loss_D_A.data[0]        
         #D_B = self.loss_D_B.data[0]
         G_A = self.loss_G_A.data[0]
-        G_B = self.loss_G_B.data[0]
+        G_B = self.loss_G_B.data[0]        
+        
+        if self.opt.which_model_netD != 'dcgan' and type(G_A) == self.Tensor:
+            G_A = G_A.mean()
+            G_B = G_B.mean()            
+
         D_A_real, D_A_fake = self.loss_D_A_real.data[0], self.loss_D_A_fake.data[0]
         D_B_real, D_B_fake = self.loss_D_B_real.data[0], self.loss_D_B_fake.data[0]
         #sumGA = self.loss_sumGA.data[0]
@@ -416,10 +423,14 @@ class CycleWGANModel(BaseModel):
 
         if self.loss_cycle_A is not 0:
             Cyc_A = self.loss_cycle_A.data[0]   
+            if self.opt.which_model_netD != 'dcgan' and type(Cyc_A) == self.Tensor:
+                Cyc_A = Cyc_A.mean()
             currentErrors['Cyc_A'] = Cyc_A
 
         if self.loss_cycle_B is not 0:
             Cyc_B = self.loss_cycle_B.data[0]   
+            if self.opt.which_model_netD != 'dcgan' and type(Cyc_B) == self.Tensor:
+                Cyc_B = Cyc_B.mean()
             currentErrors['Cyc_B'] = Cyc_B
         
         # feat_AfB = self.feat_loss_AfB.data[0]
@@ -485,4 +496,3 @@ class CycleWGANModel(BaseModel):
 
         print('update learning rate: %f -> %f' % (self.old_lr, lr))
         self.old_lr = lr
-
