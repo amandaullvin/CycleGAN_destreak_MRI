@@ -55,7 +55,9 @@ class CycleWGANModel(BaseModel):
 
         self.one = self.Tensor([1])
         self.mone = self.one * -1
-        self.ones = torch.ones(1, 35, 35) # FIXME compute size from input and architecture of netD
+        
+        if opt.which_model_netD == 'dcgan':
+            self.ones = torch.ones(1, 35, 35) # FIXME compute size from input and architecture of netD
 
         # init G related losses to 0 to print in the first few iterations
         self.loss_G_A = Variable(self.Tensor([0]))
@@ -207,9 +209,10 @@ class CycleWGANModel(BaseModel):
         #self.disp_outD_fake = outD_fake.mean()
         wloss = self.criterionWGAN(fake=outD_fake, real=outD_real)
         # import pdb; pdb.set_trace()
-        wloss.backward(self.ones)
-
-        del wloss
+        if opt.which_model_netD == 'dcgan':
+            wloss.backward(self.ones)
+        else:
+            wloss.backward()
 
         return outD_real.mean(), outD_fake.mean()
 
@@ -347,8 +350,12 @@ class CycleWGANModel(BaseModel):
 
             self.feat_loss.backward()
         else:
-            self.loss_sumGA.backward(self.ones)
-            self.loss_sumGB.backward(self.ones)
+            if opt.which_model_netD == 'dcgan':
+                self.loss_sumGA.backward(self.ones)
+                self.loss_sumGB.backward(self.ones)
+            else:
+                self.loss_sumGA.backward()
+                self.loss_sumGB.backward()
 
         # Unfreeze them for the next iteration of optimize_parameters_D()
         self.freeze_discriminators(False)  
