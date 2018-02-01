@@ -42,7 +42,7 @@ for epoch in range(1, opt.nepoch + opt.nepoch_decay + 1):
 
         # train the discriminators Diters times
         if (gen_iterations < 25 and not opt.skip_warmup) or (gen_iterations % 500 == 0 and gen_iterations > 0):
-            diters = 100 # FIXME should be 100
+            diters = 10 # FIXME should be 100
         else:
             diters = opt.diter
 

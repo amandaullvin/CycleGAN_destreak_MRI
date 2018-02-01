@@ -55,6 +55,7 @@ class CycleWGANModel(BaseModel):
 
         self.one = self.Tensor([1])
         self.mone = self.one * -1
+        self.ones = torch.ones(1, 35, 35) # FIXME compute size from input and architecture of netD
 
         # init G related losses to 0 to print in the first few iterations
         self.loss_G_A = Variable(self.Tensor([0]))
@@ -103,6 +104,7 @@ class CycleWGANModel(BaseModel):
                                             opt.n_layers_D, opt.norm, use_sigmoid, self.gpu_ids)
             if (self.opt.lambda_feat > 0):
                 self.netFeat = networks.define_feature_network(opt.which_model_feat, self.gpu_ids)
+
 
             #self.netD_A.model[11].register_forward_hook(printnorm)
             #self.netD_A.model[11].register_backward_hook(printgradnorm)
@@ -204,7 +206,8 @@ class CycleWGANModel(BaseModel):
         #self.disp_outD_real = outD_real.mean()
         #self.disp_outD_fake = outD_fake.mean()
         wloss = self.criterionWGAN(fake=outD_fake, real=outD_real)
-        wloss.backward()
+        # import pdb; pdb.set_trace()
+        wloss.backward(self.ones)
 
         del wloss
 
@@ -293,16 +296,16 @@ class CycleWGANModel(BaseModel):
         # Forward cycle loss
         if lambda_A != 0:
             self.rec_A = self.netG_B(self.fake_B) 
-            self.loss_cycle_A = self.criterionCycle(self.rec_A, self.real_A) * lambda_A
-            #self.loss_cycle_A = self.criterionWGAN(fake=self.rec_A, real=self.real_A) * lambda_A
+            #self.loss_cycle_A = self.criterionCycle(self.rec_A, self.real_A) * lambda_A
+            self.loss_cycle_A = self.criterionWGAN(fake=self.netD_B(self.rec_A), real=self.netD_B(self.real_A)) * lambda_A
         else:
             self.loss_cycle_A = 0
         
         # Backward cycle loss
         if lambda_B != 0:
             self.rec_B = self.netG_A(self.fake_A)
-            self.loss_cycle_B = self.criterionCycle(self.rec_B, self.real_B) * lambda_B
-            #self.loss_cycle_B = self.criterionWGAN(fake=self.rec_B, real=self.real_B) * lambda_B
+            #self.loss_cycle_B = self.criterionCycle(self.rec_B, self.real_B) * lambda_B
+            self.loss_cycle_B = self.criterionWGAN(fake=self.netD_A(self.rec_B), real=self.netD_A(self.real_B)) * lambda_B
         else:
             self.loss_cycle_B = 0
 
@@ -344,8 +347,8 @@ class CycleWGANModel(BaseModel):
 
             self.feat_loss.backward()
         else:
-            self.loss_sumGA.backward()
-            self.loss_sumGB.backward()
+            self.loss_sumGA.backward(self.ones)
+            self.loss_sumGB.backward(self.ones)
 
         # Unfreeze them for the next iteration of optimize_parameters_D()
         self.freeze_discriminators(False)  

@@ -166,15 +166,15 @@ class WGANLoss(nn.Module):
         if fake is None and real is None:
             raise ValueError('WGAN Loss expect either a "fake" image or both "real" and "fake" images.')
         elif fake is None: # only one image is given (from backward_G, where we want to train G)
-            wloss = real.mean()
-            wloss = wloss.view(1)
+            wloss = real.mean(0)
+            #wloss = wloss.view(1)
             return wloss
         else: # both images are given (from backward_D, where we want to train D)
         # D wants this loss to be large
             #wloss = real.mean() - fake.mean()
-            wloss = real.mean() - fake.mean()
+            wloss = real.mean(0) - fake.mean(0)
             #import pdb; pdb.set_trace()
-            wloss = wloss.view(1)
+            # wloss = wloss.view(1)
             return wloss
 
 
@@ -420,7 +420,7 @@ class DCGAN_D(nn.Module):
         # for i in range(18):
         #     a = self.main[i](a)
         #     print(a.size())
-        #import pdb; pdb.set_trace()
+        # import pdb; pdb.set_trace()
         output = output.mean(0)
         return output.view(1)
 
@@ -520,13 +520,14 @@ class NLayerDiscriminator(nn.Module):
         self.model = nn.Sequential(*sequence)
 
     def forward(self, input):
+        # import pdb; pdb.set_trace()
+        # print(input.size())
+        # prevOut = input
+        # for i in range(len(self.model)):
+        #     prevOut = self.model[i](prevOut)
+        #     print(prevOut.size())
+
         if len(self.gpu_ids) and isinstance(input.data, torch.cuda.FloatTensor):
-            import pdb; pdb.set_trace()
-            print(input.size())
-            prevOut = input
-            for i in range(len(self.model)):
-                prevOut = self.model[i](prevOut)
-                print(prevOut.size())
             return nn.parallel.data_parallel(self.model, input, self.gpu_ids)
         else:
             return self.model(input)
