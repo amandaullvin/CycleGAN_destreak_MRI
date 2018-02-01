@@ -3,7 +3,7 @@ import os
 import ntpath
 import time
 from . import util
-from . import html
+
 
 class Visualizer():
     def __init__(self, opt):
@@ -18,6 +18,7 @@ class Visualizer():
             self.display_single_pane_ncols = opt.display_single_pane_ncols
 
         if self.use_html:
+            from . import html
             self.web_dir = os.path.join(opt.checkpoints_dir, opt.name, 'web')
             self.img_dir = os.path.join(self.web_dir, 'images')
             print('create web directory %s...' % self.web_dir)
