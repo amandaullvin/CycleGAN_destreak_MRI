@@ -56,7 +56,7 @@ class CycleWGANModel(BaseModel):
         self.one = self.Tensor([1])
         self.mone = self.one * -1
         
-        if opt.which_model_netD == 'dcgan':
+        if opt.which_model_netD != 'dcgan':
             self.ones = torch.ones(1, 35, 35) # FIXME compute size from input and architecture of netD
 
         # init G related losses to 0 to print in the first few iterations
