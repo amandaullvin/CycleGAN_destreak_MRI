@@ -63,7 +63,7 @@ for epoch in range(1, opt.nepoch + opt.nepoch_decay + 1):
             # print losses to console
             if total_steps % opt.print_freq == 0:
                 errors = model.get_current_errors()
-                t = (time.time() - iter_start_time) / opt.batchSize
+                t = (time.time() - iter_start_time)
                 visualizer.print_current_errors(epoch, epoch_iter, errors, t)
                 #if opt.display_id > 0:
                 #    visualizer.plot_current_errors(epoch, float(epoch_iter)/dataset_size, opt, errors)
@@ -95,7 +95,7 @@ for epoch in range(1, opt.nepoch + opt.nepoch_decay + 1):
 
         if total_steps % opt.print_freq == 0:
             errors = model.get_current_errors()
-            t = (time.time() - iter_start_time) / opt.batchSize
+            t = (time.time() - iter_start_time) 
             visualizer.print_current_errors(epoch, epoch_iter, errors, t)
             if opt.display_id > 0:
                 visualizer.plot_current_errors(epoch, float(epoch_iter)/dataset_size, opt, errors)
