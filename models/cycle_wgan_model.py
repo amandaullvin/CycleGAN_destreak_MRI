@@ -302,16 +302,16 @@ class CycleWGANModel(BaseModel):
         # Forward cycle loss
         if lambda_A != 0:
             self.rec_A = self.netG_B(self.fake_B) 
-            #self.loss_cycle_A = self.criterionCycle(self.rec_A, self.real_A) * lambda_A
-            self.loss_cycle_A = self.criterionWGAN(fake=self.netD_B(self.rec_A), real=self.netD_B(self.real_A)) * lambda_A
+            self.loss_cycle_A = self.criterionCycle(self.rec_A, self.real_A) * lambda_A
+            #self.loss_cycle_A = self.criterionWGAN(fake=self.netD_B(self.rec_A), real=self.netD_B(self.real_A)) * lambda_A
         else:
             self.loss_cycle_A = 0
         
         # Backward cycle loss
         if lambda_B != 0:
             self.rec_B = self.netG_A(self.fake_A)
-            #self.loss_cycle_B = self.criterionCycle(self.rec_B, self.real_B) * lambda_B
-            self.loss_cycle_B = self.criterionWGAN(fake=self.netD_A(self.rec_B), real=self.netD_A(self.real_B)) * lambda_B
+            self.loss_cycle_B = self.criterionCycle(self.rec_B, self.real_B) * lambda_B
+            #self.loss_cycle_B = self.criterionWGAN(fake=self.netD_A(self.rec_B), real=self.netD_A(self.real_B)) * lambda_B
         else:
             self.loss_cycle_B = 0
 
