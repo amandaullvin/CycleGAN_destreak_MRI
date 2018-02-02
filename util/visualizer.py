@@ -73,6 +73,7 @@ class Visualizer():
                     idx += 1
 
         if self.use_html: # save images to a html file
+            from . import html
             for label, image_numpy in visuals.items():
                 img_path = os.path.join(self.img_dir, 'epoch%.3d_%s.png' % (epoch, label))
                 util.save_image(image_numpy, img_path)
