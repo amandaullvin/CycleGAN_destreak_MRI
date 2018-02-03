@@ -324,46 +324,56 @@ class CycleWGANModel(BaseModel):
         #self.disp_sumGB = self.loss_G_B.clone() + self.loss_cycle_B.clone()
 
         # Perceptual losses:
-        if (self.opt.lambda_feat > 0):
-            # self.feat_loss_AfB = self.criterionFeat(self.netFeat(self.real_A), self.netFeat(self.fake_B)) * lambda_feat_AfB    
-            # self.feat_loss_BfA = self.criterionFeat(self.netFeat(self.real_B), self.netFeat(self.fake_A)) * lambda_feat_BfA
+        if (self.opt.lambda_feat_AfB > 0 and self.opt.lambda_feat_BfA > 0):
+            self.feat_loss_AfB = self.criterionFeat(self.netFeat(self.real_A), self.netFeat(self.fake_B)) * lambda_feat_AfB    
+            self.feat_loss_BfA = self.criterionFeat(self.netFeat(self.real_B), self.netFeat(self.fake_A)) * lambda_feat_BfA
+            # self.feat_loss_AfB = self.criterionWGAN(real=self.netFeat(self.real_A), fake=self.netFeat(self.fake_B)) * lambda_feat_AfB    
+            # self.feat_loss_BfA = self.criterionWGAN(real=self.netFeat(self.real_B), fake=self.netFeat(self.fake_A)) * lambda_feat_BfA
+        else:
+            self.feat_loss_AfB = 0
+            self.feat_loss_BfA = 0
 
-            # self.feat_loss_fArecB = self.criterionFeat(self.netFeat(self.fake_A), self.netFeat(self.rec_B)) * lambda_feat_fArecB
-            # self.feat_loss_fBrecA = self.criterionFeat(self.netFeat(self.fake_B), self.netFeat(self.rec_A)) * lambda_feat_fBrecA
-
-            # self.feat_loss_ArecA = self.criterionFeat(self.netFeat(self.real_A), self.netFeat(self.rec_A)) * lambda_feat_ArecA 
-            # self.feat_loss_BrecB = self.criterionFeat(self.netFeat(self.real_B), self.netFeat(self.rec_B)) * lambda_feat_BrecB 
-
-            self.feat_loss_AfB = self.criterionWGAN(real=self.netFeat(self.real_A), fake=self.netFeat(self.fake_B)) * lambda_feat_AfB    
-            self.feat_loss_BfA = self.criterionWGAN(real=self.netFeat(self.real_B), fake=self.netFeat(self.fake_A)) * lambda_feat_BfA
-
-            #self.feat_loss_fArecB = self.criterionWGAN(self.netFeat(self.fake_A), self.netFeat(self.rec_B)) * lambda_feat_fArecB
-            #self.feat_loss_fBrecA = self.criterionWGAN(self.netFeat(self.fake_B), self.netFeat(self.rec_A)) * lambda_feat_fBrecA
+        if (self.opt.lambda_feat_fArecB > 0 and self.opt.lambda_feat_fBrecA > 0):
+            self.feat_loss_fArecB = self.criterionFeat(self.netFeat(self.fake_A), self.netFeat(self.rec_B)) * lambda_feat_fArecB
+            self.feat_loss_fBrecA = self.criterionFeat(self.netFeat(self.fake_B), self.netFeat(self.rec_A)) * lambda_feat_fBrecA
+            # self.feat_loss_fArecB = self.criterionWGAN(self.netFeat(self.fake_A), self.netFeat(self.rec_B)) * lambda_feat_fArecB
+            # self.feat_loss_fBrecA = self.criterionWGAN(self.netFeat(self.fake_B), self.netFeat(self.rec_A)) * lambda_feat_fBrecA
+        else:
             self.feat_loss_fArecB = 0
             self.feat_loss_fBrecA = 0
 
-            self.feat_loss_ArecA = self.criterionWGAN(real=self.netFeat(self.real_A), fake=self.netFeat(self.rec_A)) * lambda_feat_ArecA 
-            self.feat_loss_BrecB = self.criterionWGAN(real=self.netFeat(self.real_B), fake=self.netFeat(self.rec_B)) * lambda_feat_BrecB 
 
-            self.loss_sumGA.backward(retain_graph=True)
-            self.loss_sumGB.backward(retain_graph=True)
+        if (self.opt.lambda_feat_ArecA > 0 and self.opt.lambda_feat_BrecB > 0):
+            self.feat_loss_ArecA = self.criterionFeat(self.netFeat(self.real_A), self.netFeat(self.rec_A)) * lambda_feat_ArecA 
+            self.feat_loss_BrecB = self.criterionFeat(self.netFeat(self.real_B), self.netFeat(self.rec_B)) * lambda_feat_BrecB 
+            # self.feat_loss_ArecA = self.criterionWGAN(real=self.netFeat(self.real_A), fake=self.netFeat(self.rec_A)) * lambda_feat_ArecA 
+            # self.feat_loss_BrecB = self.criterionWGAN(real=self.netFeat(self.real_B), fake=self.netFeat(self.rec_B)) * lambda_feat_BrecB 
+        else:
+            self.feat_loss_ArecA = 0
+            self.feat_loss_BrecB = 0
 
-            self.feat_loss = self.feat_loss_AfB + self.feat_loss_BfA + self.feat_loss_fArecB \
+
+        # first sum the feat losses
+        self.feat_loss = self.feat_loss_AfB + self.feat_loss_BfA + self.feat_loss_fArecB \
                         + self.feat_loss_fBrecA + self.feat_loss_ArecA + self.feat_loss_BrecB
 
-            self.feat_loss.backward()
+        haveFeatLoss = self.feat_loss > 0
+
+        # then backprop OTHER losses, with or without retaining the graph
+        if self.opt.which_model_netD == 'dcgan':
+            self.loss_sumGA.backward(retain_graph=haveFeatLoss)
+            self.loss_sumGB.backward(retain_graph=haveFeatLoss)
         else:
-            if self.opt.which_model_netD == 'dcgan':
-                self.loss_sumGA.backward()
-                self.loss_sumGB.backward()
-            else:
-                self.loss_sumGA.backward(self.ones)
-                self.loss_sumGB.backward(self.ones)
+            self.loss_sumGA.backward(self.ones, retain_graph=haveFeatLoss)
+            self.loss_sumGB.backward(self.ones, retain_graph=haveFeatLoss)
+            
+        if haveFeatLoss:
+            self.feat_loss.backward()
+
+
 
         # Unfreeze them for the next iteration of optimize_parameters_D()
         self.freeze_discriminators(False)  
-
-        del outD_A_fake, outD_B_fake 
 
         
 
