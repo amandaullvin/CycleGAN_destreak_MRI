@@ -157,6 +157,16 @@ class CycleWGANModel(BaseModel):
                 self.optimizer_D_A = torch.optim.RMSprop(self.netD_A.parameters(), lr=opt.lr)
                 self.optimizer_D_B = torch.optim.RMSprop(self.netD_B.parameters(), lr=opt.lr)
 
+            # manage lambdas for perceptual loss
+            if (self.opt.lambda_feat > 0):
+                print("sets all lambda_feat* to lambda_feat")
+                self.opt.lambda_feat_AfB = self.opt.lambda_feat
+                self.opt.lambda_feat_BfA = self.opt.lambda_feat
+                self.opt.lambda_feat_fArecB = self.opt.lambda_feat
+                self.opt.lambda_feat_fBrecA = self.opt.lambda_feat
+                self.opt.lambda_feat_ArecA = self.opt.lambda_feat
+                self.opt.lambda_feat_BrecB = self.opt.lambda_feat
+
 
         print('---------- Networks initialized -------------')
         networks.print_network(self.netG_A)
@@ -242,38 +252,17 @@ class CycleWGANModel(BaseModel):
         
 
     def backward_G(self):
-        lambda_idt = self.opt.identity
-        lambda_A = self.opt.lambda_A
-        lambda_B = self.opt.lambda_B
-
-        lambda_feat_AfB = self.opt.lambda_feat_AfB    
-        lambda_feat_BfA = self.opt.lambda_feat_BfA
-
-        lambda_feat_fArecB = self.opt.lambda_feat_fArecB
-        lambda_feat_fBrecA = self.opt.lambda_feat_fBrecA
-
-        lambda_feat_ArecA = self.opt.lambda_feat_ArecA
-        lambda_feat_BrecB = self.opt.lambda_feat_BrecB
-
-        if (self.opt.lambda_feat > 0):
-            lambda_feat_AfB = self.opt.lambda_feat
-            lambda_feat_BfA = self.opt.lambda_feat
-            lambda_feat_fArecB = self.opt.lambda_feat
-            lambda_feat_fBrecA = self.opt.lambda_feat
-            lambda_feat_ArecA = self.opt.lambda_feat
-            lambda_feat_BrecB = self.opt.lambda_feat
-
 
         # Identity loss
-        if lambda_idt > 0:
+        if self.opt.identity > 0:
             # G_A should be identity if real_B is fed.            
             self.idt_A = self.netG_A(self.real_B)
-            self.loss_idt_A = self.criterionIdt(self.idt_A, self.real_B) * lambda_B * lambda_idt
+            self.loss_idt_A = self.criterionIdt(self.idt_A, self.real_B) * self.opt.lambda_B * self.opt.identity
             #self.loss_idt_A = self.criterionWGAN(fake=self.idt_A, real=self.real_B) * lambda_B * lambda_idt
             #self.loss_idt_A = self.criterionWGAN(fake=self.idt_A, real=self.real_B) * lambda_idt
             # G_B should be identity if real_A is fed.
             self.idt_B = self.netG_B(self.real_A)
-            self.loss_idt_B = self.criterionIdt(self.idt_B, self.real_A) * lambda_A * lambda_idt
+            self.loss_idt_B = self.criterionIdt(self.idt_B, self.real_A) * self.opt.lambda_A * self.opt.identity
             #self.loss_idt_B = self.criterionWGAN(fake=self.idt_B, real=self.real_A) * lambda_A * lambda_idt
             #self.loss_idt_B = self.criterionWGAN(fake=self.idt_B, real=self.real_A) * lambda_idt
         else:
@@ -300,17 +289,17 @@ class CycleWGANModel(BaseModel):
 
         
         # Forward cycle loss
-        if lambda_A != 0:
+        if self.opt.lambda_A != 0:
             self.rec_A = self.netG_B(self.fake_B) 
-            self.loss_cycle_A = self.criterionCycle(self.rec_A, self.real_A) * lambda_A
+            self.loss_cycle_A = self.criterionCycle(self.rec_A, self.real_A) * self.opt.lambda_A
             #self.loss_cycle_A = self.criterionWGAN(fake=self.netD_B(self.rec_A), real=self.netD_B(self.real_A)) * lambda_A
         else:
             self.loss_cycle_A = 0
         
         # Backward cycle loss
-        if lambda_B != 0:
+        if self.opt.lambda_B != 0:
             self.rec_B = self.netG_A(self.fake_A)
-            self.loss_cycle_B = self.criterionCycle(self.rec_B, self.real_B) * lambda_B
+            self.loss_cycle_B = self.criterionCycle(self.rec_B, self.real_B) * self.opt.lambda_B
             #self.loss_cycle_B = self.criterionWGAN(fake=self.netD_A(self.rec_B), real=self.netD_A(self.real_B)) * lambda_B
         else:
             self.loss_cycle_B = 0
@@ -325,8 +314,8 @@ class CycleWGANModel(BaseModel):
 
         # Perceptual losses:
         if (self.opt.lambda_feat_AfB > 0 and self.opt.lambda_feat_BfA > 0):
-            self.feat_loss_AfB = self.criterionFeat(self.netFeat(self.real_A), self.netFeat(self.fake_B)) * lambda_feat_AfB    
-            self.feat_loss_BfA = self.criterionFeat(self.netFeat(self.real_B), self.netFeat(self.fake_A)) * lambda_feat_BfA
+            self.feat_loss_AfB = self.criterionFeat(self.netFeat(self.real_A), self.netFeat(self.fake_B)) * self.opt.lambda_feat_AfB    
+            self.feat_loss_BfA = self.criterionFeat(self.netFeat(self.real_B), self.netFeat(self.fake_A)) * self.opt.lambda_feat_BfA
             # self.feat_loss_AfB = self.criterionWGAN(real=self.netFeat(self.real_A), fake=self.netFeat(self.fake_B)) * lambda_feat_AfB    
             # self.feat_loss_BfA = self.criterionWGAN(real=self.netFeat(self.real_B), fake=self.netFeat(self.fake_A)) * lambda_feat_BfA
         else:
@@ -334,8 +323,8 @@ class CycleWGANModel(BaseModel):
             self.feat_loss_BfA = 0
 
         if (self.opt.lambda_feat_fArecB > 0 and self.opt.lambda_feat_fBrecA > 0):
-            self.feat_loss_fArecB = self.criterionFeat(self.netFeat(self.fake_A), self.netFeat(self.rec_B)) * lambda_feat_fArecB
-            self.feat_loss_fBrecA = self.criterionFeat(self.netFeat(self.fake_B), self.netFeat(self.rec_A)) * lambda_feat_fBrecA
+            self.feat_loss_fArecB = self.criterionFeat(self.netFeat(self.fake_A), self.netFeat(self.rec_B)) * self.opt.lambda_feat_fArecB
+            self.feat_loss_fBrecA = self.criterionFeat(self.netFeat(self.fake_B), self.netFeat(self.rec_A)) * self.opt.lambda_feat_fBrecA
             # self.feat_loss_fArecB = self.criterionWGAN(self.netFeat(self.fake_A), self.netFeat(self.rec_B)) * lambda_feat_fArecB
             # self.feat_loss_fBrecA = self.criterionWGAN(self.netFeat(self.fake_B), self.netFeat(self.rec_A)) * lambda_feat_fBrecA
         else:
@@ -344,8 +333,8 @@ class CycleWGANModel(BaseModel):
 
 
         if (self.opt.lambda_feat_ArecA > 0 and self.opt.lambda_feat_BrecB > 0):
-            self.feat_loss_ArecA = self.criterionFeat(self.netFeat(self.real_A), self.netFeat(self.rec_A)) * lambda_feat_ArecA 
-            self.feat_loss_BrecB = self.criterionFeat(self.netFeat(self.real_B), self.netFeat(self.rec_B)) * lambda_feat_BrecB 
+            self.feat_loss_ArecA = self.criterionFeat(self.netFeat(self.real_A), self.netFeat(self.rec_A)) * self.opt.lambda_feat_ArecA 
+            self.feat_loss_BrecB = self.criterionFeat(self.netFeat(self.real_B), self.netFeat(self.rec_B)) * self.opt.lambda_feat_BrecB 
             # self.feat_loss_ArecA = self.criterionWGAN(real=self.netFeat(self.real_A), fake=self.netFeat(self.rec_A)) * lambda_feat_ArecA 
             # self.feat_loss_BrecB = self.criterionWGAN(real=self.netFeat(self.real_B), fake=self.netFeat(self.rec_B)) * lambda_feat_BrecB 
         else:
