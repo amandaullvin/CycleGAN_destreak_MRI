@@ -433,32 +433,35 @@ class CycleWGANModel(BaseModel):
 
         if self.loss_cycle_A is not 0:
             Cyc_A = self.loss_cycle_A.data[0]   
-            if self.opt.which_model_netD != 'dcgan' and type(Cyc_A) == self.Tensor:
+            # this is relevant only we use WGAN for CycleLoss
+            if self.opt.which_model_netD != 'dcgan' and type(Cyc_A) == self.Tensor: 
                 Cyc_A = Cyc_A.mean()
             currentErrors['Cyc_A'] = Cyc_A
 
         if self.loss_cycle_B is not 0:
             Cyc_B = self.loss_cycle_B.data[0]   
+            # this is relevant only we use WGAN for CycleLoss
             if self.opt.which_model_netD != 'dcgan' and type(Cyc_B) == self.Tensor:
                 Cyc_B = Cyc_B.mean()
             currentErrors['Cyc_B'] = Cyc_B
         
-        # feat_AfB = self.feat_loss_AfB.data[0]
-        # feat_BfA = self.feat_loss_BfA.data[0]
-        #feat_fArecB = self.feat_loss_fArecB.data[0]
-        #feat_fBrecA = self.feat_loss_fBrecA.data[0]
-        #feat_ArecA = self.feat_loss_ArecA.data[0]
-        #feat_BrecB = self.feat_loss_BrecB.data[0]
-        #featL = self.feat_loss.data[0]
-
-
-
         if self.opt.identity > 0.0:
             idt_A = self.loss_idt_A.data[0]
             idt_B = self.loss_idt_B.data[0]
 
             currentErrors['idt_A'] = idt_A
             currentErrors['idt_B'] = idt_B
+
+        # feat_AfB = self.feat_loss_AfB.data[0]
+        # feat_BfA = self.feat_loss_BfA.data[0]
+        #feat_fArecB = self.feat_loss_fArecB.data[0]
+        #feat_fBrecA = self.feat_loss_fBrecA.data[0]
+        #feat_ArecA = self.feat_loss_ArecA.data[0]
+        #feat_BrecB = self.feat_loss_BrecB.data[0]
+        featL = self.feat_loss.data[0]
+        if featL > 0.0:
+            currentErrors['featL'] = featL
+
 
         return currentErrors
 
