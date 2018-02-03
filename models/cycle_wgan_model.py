@@ -346,7 +346,7 @@ class CycleWGANModel(BaseModel):
         self.feat_loss = self.feat_loss_AfB + self.feat_loss_BfA + self.feat_loss_fArecB \
                         + self.feat_loss_fBrecA + self.feat_loss_ArecA + self.feat_loss_BrecB
 
-        haveFeatLoss = self.feat_loss > 0
+        haveFeatLoss =  not (type(self.feat_loss) is int)
 
         # then backprop OTHER losses, with or without retaining the graph
         if self.opt.which_model_netD == 'dcgan':
